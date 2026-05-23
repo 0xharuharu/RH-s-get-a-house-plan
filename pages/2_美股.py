@@ -74,9 +74,7 @@ def render_us_card(ticker: str, grp: str):
         # ── Compact price block ───────────────────────────────────────────
         st.markdown(
             f"<div style='margin-bottom:6px'>"
-            f"<div style='font-size:0.74em;color:rgba(255,255,255,0.42);"
-            f"margin-bottom:3px;line-height:1.3'>"
-            f"{info['label']}</div>"
+            f"<div class='stock-card-name'>{info['label']}</div>"
             f"<div style='font-size:1.35em;font-weight:700;line-height:1.15'>"
             f"{price_str}</div>"
             f"<div style='font-size:0.84em;font-weight:600;color:{clr};margin-top:2px'>"
@@ -102,36 +100,29 @@ def render_us_card(ticker: str, grp: str):
         st.caption("　".join(meta))
 
         # ── Action buttons ────────────────────────────────────────────────
-        d, b1, b2, b3, b4 = st.columns([1.5, 1, 1, 1, 1])
-        with d:
-            if st.button("🔍", key=f"us_det_{ticker}_{grp}",
-                         use_container_width=True, help="個股詳情"):
+        b1, b2, b3, b4 = st.columns(4)
+        with b1:
+            if st.button("🔍\n查看個股", key=f"us_det_{ticker}_{grp}",
+                         use_container_width=True):
                 st.session_state.detail_ticker = ticker
                 st.switch_page("pages/7_個股詳細資訊.py")
-        with b1:
-            if st.button("💼", key=f"us_hold_{ticker}_{grp}",
-                         use_container_width=True, help="加入持有"):
+        with b2:
+            if st.button("💼\n加入持有", key=f"us_hold_{ticker}_{grp}",
+                         use_container_width=True):
                 portfolio["us_groups"].setdefault("持有", [])
                 add_to_group(portfolio, ticker, "持有", "us")
                 save_portfolio(portfolio)
                 st.toast(f"{ticker} 已加入「持有」")
-        with b2:
-            if st.button("📌", key=f"us_watch_{ticker}_{grp}",
-                         use_container_width=True, help="加入自選"):
-                portfolio["us_groups"].setdefault("自選", [])
-                add_to_group(portfolio, ticker, "自選", "us")
-                save_portfolio(portfolio)
-                st.toast(f"{ticker} 已加入「自選」")
         with b3:
-            if st.button("🏠", key=f"us_home_{ticker}_{grp}",
-                         use_container_width=True, help="加入首頁追蹤"):
+            if st.button("🏠\n首頁追蹤", key=f"us_home_{ticker}_{grp}",
+                         use_container_width=True):
                 if add_to_home_watch(portfolio, ticker):
                     save_portfolio(portfolio)
                     st.toast(f"{ticker} 已加入首頁追蹤")
                 else:
                     st.toast("已在首頁追蹤中")
         with b4:
-            if st.button("✕", key=f"us_rm_{ticker}_{grp}",
+            if st.button("✕\n取消收藏", key=f"us_rm_{ticker}_{grp}",
                          use_container_width=True, type="secondary"):
                 remove_from_group(portfolio, ticker, grp, "us")
                 save_portfolio(portfolio)

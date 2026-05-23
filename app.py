@@ -71,6 +71,28 @@ hr { border-color: rgba(255,255,255,0.08); }
     font-size: 0.82em;
 }
 
+/* ── Stock card: name label (theme-adaptive) ── */
+.stock-card-name {
+    font-size: 0.74em;
+    margin-bottom: 3px;
+    line-height: 1.3;
+    color: #666;
+}
+@media (prefers-color-scheme: dark) {
+    .stock-card-name { color: rgba(220,220,220,0.50); }
+}
+
+/* ── Stock card action buttons: 2-line emoji+text ── */
+[data-testid="stVerticalBlockBorderWrapper"] .stButton > button {
+    padding: 0.25rem 0.15rem !important;
+}
+[data-testid="stVerticalBlockBorderWrapper"] .stButton > button p {
+    white-space: pre-line !important;
+    text-align: center !important;
+    line-height: 1.25 !important;
+    font-size: 0.70em !important;
+}
+
 /* ── Mobile bottom nav (hidden on desktop) ── */
 .mobile-bottom-nav { display: none; }
 
