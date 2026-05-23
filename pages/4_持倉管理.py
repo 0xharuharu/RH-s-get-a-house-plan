@@ -217,39 +217,35 @@ def render_holdings_section(section: dict, title: str, profile_id: str, prices: 
         pos_pct = (total / total_cost * 100) if total_cost else 0
 
         with st.container(border=True):
-            cols = st.columns([3, 2, 2, 2, 2, 2, 1])
+            # ── 名稱 + 倉位條 ─────────────────────────────────────────────────
+            st.markdown(f"**{holding_label(ticker)}**")
+            st.progress(min(pos_pct / 100, 1.0))
+            st.caption(f"倉位 {pos_pct:.1f}%")
 
-            with cols[0]:
-                st.markdown(f"**{holding_label(ticker)}**")
-                st.progress(min(pos_pct / 100, 1.0))
-                st.caption(f"倉位 {pos_pct:.1f}%")
+            # ── 價格三欄（手機上 min-width 讓三欄在窄螢幕自動換行） ─────────
+            c1, c2, c3 = st.columns(3)
+            c1.metric("持股均價", fmt(cost_ps))
+            if price is not None:
+                chg = price - cost_ps
+                chg_p = (chg / cost_ps * 100) if cost_ps else 0
+                c2.metric("現價", fmt(price), f"{chg_p:+.2f}%")
+            else:
+                c2.metric("現價", "—")
+            c3.metric("持股數", f"{qty:,.0f} 股")
 
-            with cols[1]:
-                st.metric("持股均價", fmt(cost_ps))
+            # ── 成本 + 損益（兩欄） ────────────────────────────────────────────
+            d1, d2 = st.columns(2)
+            d1.metric("總投入", f"{total:,.0f}")
+            if pnl is not None and pnl_p is not None:
+                d2.metric("損益", f"{pnl:+,.0f}", f"{pnl_p:+.2f}%")
+            else:
+                d2.metric("損益", "—")
 
-            with cols[2]:
-                if price is not None:
-                    chg = price - cost_ps
-                    chg_p = (chg / cost_ps * 100) if cost_ps else 0
-                    st.metric("現價", fmt(price), f"{chg_p:+.2f}%")
-                else:
-                    st.metric("現價", "—")
-
-            with cols[3]:
-                st.metric("持股數", f"{qty:,.0f} 股")
-
-            with cols[4]:
-                st.metric("總投入", f"{total:,.0f}")
-
-            with cols[5]:
-                if pnl is not None and pnl_p is not None:
-                    st.metric("損益", f"{pnl:+,.0f}", f"{pnl_p:+.2f}%")
-                else:
-                    st.metric("損益", "—")
-
-            with cols[6]:
+            # ── 移除按鈕（靠右，手機上全寬） ─────────────────────────────────
+            _, btn_col = st.columns([7, 3])
+            with btn_col:
                 if st.button(
-                    "✕",
+                    "✕ 移除",
                     key=f"del_{profile_id}_{ticker}",
                     type="secondary",
                     use_container_width=True,

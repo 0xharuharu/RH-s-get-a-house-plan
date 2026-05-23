@@ -66,6 +66,51 @@ hr { border-color: rgba(255,255,255,0.08); }
     color: rgba(255,255,255,0.55);
     font-size: 0.82em;
 }
+
+/* ══ Mobile responsive ══════════════════════════════════════════════════════ */
+@media (max-width: 640px) {
+    /* Tighter page padding */
+    .block-container {
+        padding-left: 0.6rem !important;
+        padding-right: 0.6rem !important;
+        padding-top: 0.75rem !important;
+        max-width: 100vw !important;
+    }
+    /* Smaller headings */
+    h1 { font-size: 1.35rem !important; }
+    h2 { font-size: 1.1rem !important; }
+    h3 { font-size: 0.95rem !important; }
+    /* Compact metric cards */
+    [data-testid="metric-container"] {
+        padding: 8px 10px !important;
+    }
+    [data-testid="stMetricValue"] {
+        font-size: 1.0rem !important;
+    }
+    [data-testid="stMetricLabel"] {
+        font-size: 0.70rem !important;
+    }
+    /* Allow columns to wrap when too narrow for screen */
+    [data-testid="stHorizontalBlock"] {
+        flex-wrap: wrap !important;
+    }
+    [data-testid="column"] {
+        min-width: 100px !important;
+    }
+    /* Sidebar: always collapsed on mobile */
+    [data-testid="stSidebar"] {
+        min-width: 0 !important;
+    }
+    /* Tabs: smaller text */
+    .stTabs [data-baseweb="tab"] {
+        padding: 4px 10px !important;
+        font-size: 0.85em !important;
+    }
+    /* Expanders: less padding */
+    [data-testid="stExpander"] summary {
+        padding: 8px 12px !important;
+    }
+}
 </style>
 """, unsafe_allow_html=True)
 
