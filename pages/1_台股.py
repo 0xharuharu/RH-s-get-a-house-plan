@@ -4,6 +4,7 @@ import streamlit as st
 from utils.portfolio import (
     load_portfolio, save_portfolio,
     add_to_group, remove_from_group, add_to_home_watch,
+    sync_holdings_to_groups,
 )
 from utils.stock_data import get_stock_info, format_price, format_price_md, format_volume
 
@@ -12,6 +13,10 @@ st.set_page_config(page_title="台股", page_icon="🇹🇼", layout="wide")
 if "portfolio" not in st.session_state:
     st.session_state.portfolio = load_portfolio()
 portfolio = st.session_state.portfolio
+
+# Auto-sync 持有 group with both profiles' holdings
+if sync_holdings_to_groups(portfolio):
+    save_portfolio(portfolio)
 
 # ── Sidebar ───────────────────────────────────────────────────────────────────
 with st.sidebar:

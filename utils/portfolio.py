@@ -226,6 +226,35 @@ def _holding_market_group_ticker(ticker: str) -> tuple[str, str]:
     return "us", ticker
 
 
+def sync_holdings_to_groups(portfolio: dict) -> bool:
+    """Sync tw_groups/us_groups '持有' to match the union of both profiles' holdings.
+
+    Adds tickers that are in holdings but missing from the group, and removes
+    tickers that are no longer held by either profile.  Returns True if changed.
+    """
+    all_tickers: set[str] = set()
+    for pid in ("profile_a", "profile_b"):
+        all_tickers.update(portfolio.get(pid, {}).get("holdings", {}).keys())
+
+    expected_tw: set[str] = set()
+    expected_us: set[str] = set()
+    for t in all_tickers:
+        market, group_ticker = _holding_market_group_ticker(t)
+        (expected_tw if market == "tw" else expected_us).add(group_ticker)
+
+    changed = False
+    for grp_key, expected in (("tw_groups", expected_tw), ("us_groups", expected_us)):
+        lst = portfolio.setdefault(grp_key, {}).setdefault("持有", [])
+        current = set(lst)
+        for t in sorted(expected - current):
+            lst.append(t)
+            changed = True
+        for t in current - expected:
+            lst.remove(t)
+            changed = True
+    return changed
+
+
 def upsert_holding(portfolio: dict, ticker: str, cost_per_share: float, quantity: float):
     portfolio.setdefault("holdings", {})[ticker] = {
         "cost_per_share": cost_per_share,
