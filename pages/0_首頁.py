@@ -353,10 +353,14 @@ if all_tracked_tickers:
                 lbl = info["label"].replace("&", "&amp;")
                 price = format_price(info["price"], info["is_tw"])
                 st.markdown(
-                    f"<strong><a href='?detail={info['ticker']}' "
-                    f"style='color:inherit;text-decoration:none'>{lbl}</a></strong>"
-                    f"{badge_html} &emsp; {price} &emsp; "
-                    f"<span style='color:#ff4b4b;font-weight:600'>▲ {info['change_pct']:+.2f}%</span>",
+                    f"<div style='padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.05)'>"
+                    f"<div style='font-weight:600;line-height:1.4'>"
+                    f"<a href='?detail={info['ticker']}' style='color:inherit;text-decoration:none'>{lbl}</a>"
+                    f"{badge_html}</div>"
+                    f"<div style='font-size:0.88em;margin-top:2px;color:rgba(255,255,255,0.8)'>"
+                    f"{price}&nbsp;&nbsp;"
+                    f"<span style='color:#ff4b4b;font-weight:600'>▲ {info['change_pct']:+.2f}%</span></div>"
+                    f"</div>",
                     unsafe_allow_html=True,
                 )
         with col_l:
@@ -367,10 +371,14 @@ if all_tracked_tickers:
                 lbl = info["label"].replace("&", "&amp;")
                 price = format_price(info["price"], info["is_tw"])
                 st.markdown(
-                    f"<strong><a href='?detail={info['ticker']}' "
-                    f"style='color:inherit;text-decoration:none'>{lbl}</a></strong>"
-                    f"{badge_html} &emsp; {price} &emsp; "
-                    f"<span style='color:#21c55d;font-weight:600'>▼ {abs(info['change_pct']):.2f}%</span>",
+                    f"<div style='padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.05)'>"
+                    f"<div style='font-weight:600;line-height:1.4'>"
+                    f"<a href='?detail={info['ticker']}' style='color:inherit;text-decoration:none'>{lbl}</a>"
+                    f"{badge_html}</div>"
+                    f"<div style='font-size:0.88em;margin-top:2px;color:rgba(255,255,255,0.8)'>"
+                    f"{price}&nbsp;&nbsp;"
+                    f"<span style='color:#21c55d;font-weight:600'>▼ {abs(info['change_pct']):.2f}%</span></div>"
+                    f"</div>",
                     unsafe_allow_html=True,
                 )
 
@@ -435,17 +443,20 @@ else:
         for info in movers:
             mbs = find_sectors_for_ticker(info["ticker"])
             badge_html = (" " + _badge(mbs[0][1])) if mbs else ""
-            tw_flag = info["is_tw"]
             sign = "▲" if bull else "▼"
             clr = "#ff4b4b" if bull else "#21c55d"
             pct = abs(info["change_pct"])
             lbl = info["label"].replace("&", "&amp;")
-            price = format_price(info["price"], tw_flag)
+            price = format_price(info["price"], info["is_tw"])
             st.markdown(
-                f"<strong><a href='?detail={info['ticker']}' "
-                f"style='color:inherit;text-decoration:none'>{lbl}</a></strong>"
-                f"{badge_html} &emsp; {price} &emsp; "
-                f"<span style='color:{clr};font-weight:600'>{sign} {pct:.2f}%</span>",
+                f"<div style='padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.05)'>"
+                f"<div style='font-weight:600;line-height:1.4'>"
+                f"<a href='?detail={info['ticker']}' style='color:inherit;text-decoration:none'>{lbl}</a>"
+                f"{badge_html}</div>"
+                f"<div style='font-size:0.88em;margin-top:2px;color:rgba(255,255,255,0.8)'>"
+                f"{price}&nbsp;&nbsp;"
+                f"<span style='color:{clr};font-weight:600'>{sign} {pct:.2f}%</span></div>"
+                f"</div>",
                 unsafe_allow_html=True,
             )
 

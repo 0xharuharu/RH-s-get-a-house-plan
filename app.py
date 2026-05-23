@@ -67,13 +67,17 @@ hr { border-color: rgba(255,255,255,0.08); }
     font-size: 0.82em;
 }
 
+/* ── Mobile bottom nav (hidden on desktop) ── */
+.mobile-bottom-nav { display: none; }
+
 /* ══ Mobile responsive ══════════════════════════════════════════════════════ */
 @media (max-width: 640px) {
-    /* Tighter page padding */
+    /* Tighter page padding + space for bottom nav */
     .block-container {
         padding-left: 0.6rem !important;
         padding-right: 0.6rem !important;
         padding-top: 0.75rem !important;
+        padding-bottom: 5.5rem !important;
         max-width: 100vw !important;
     }
     /* Smaller headings */
@@ -97,22 +101,6 @@ hr { border-color: rgba(255,255,255,0.08); }
     [data-testid="column"] {
         min-width: 100px !important;
     }
-    /* Sidebar toggle button: bigger touch target */
-    [data-testid="collapsedControl"] {
-        width: 2.8rem !important;
-        height: 2.8rem !important;
-        background: rgba(255,255,255,0.10) !important;
-        border-radius: 10px !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        top: 0.5rem !important;
-        left: 0.5rem !important;
-    }
-    [data-testid="collapsedControl"] svg {
-        width: 1.3rem !important;
-        height: 1.3rem !important;
-    }
     /* Tabs: smaller text */
     .stTabs [data-baseweb="tab"] {
         padding: 4px 10px !important;
@@ -121,6 +109,42 @@ hr { border-color: rgba(255,255,255,0.08); }
     /* Expanders: less padding */
     [data-testid="stExpander"] summary {
         padding: 8px 12px !important;
+    }
+    /* ── Bottom navigation bar ── */
+    .mobile-bottom-nav {
+        display: flex;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 58px;
+        background: #0e1117;
+        border-top: 1px solid rgba(255,255,255,0.13);
+        z-index: 99999;
+        align-items: stretch;
+        /* iPhone home indicator safe area */
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+    .mobile-bottom-nav a {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: rgba(255,255,255,0.50);
+        text-decoration: none;
+        font-size: 0.58rem;
+        gap: 1px;
+        -webkit-tap-highlight-color: transparent;
+        transition: color 0.12s, background 0.12s;
+    }
+    .mobile-bottom-nav a:active {
+        color: #fff;
+        background: rgba(255,255,255,0.06);
+    }
+    .nav-icon {
+        font-size: 1.3rem;
+        line-height: 1.3;
     }
 }
 </style>
@@ -145,13 +169,38 @@ st.markdown(
 )
 
 pg = st.navigation([
-    st.Page("pages/0_首頁.py",    title=s.get("home_page_name",     "首頁"),    icon="🏠", default=True),
-    st.Page("pages/1_台股.py",    title=s.get("tw_page_name",       "台股"),    icon="🇹🇼"),
-    st.Page("pages/2_美股.py",    title=s.get("us_page_name",       "美股"),    icon="🇺🇸"),
-    st.Page("pages/3_K線圖.py",   title=s.get("chart_page_name",    "K線圖"),   icon="📈"),
-    st.Page("pages/4_持倉管理.py", title=s.get("holdings_page_name", "持倉管理"), icon="💼"),
-    st.Page("pages/6_全球股市.py",       title=s.get("global_page_name",  "全球股市"),   icon="🌍"),
-    st.Page("pages/7_個股詳細資訊.py",  title=s.get("detail_page_name",  "個股詳細資訊"), icon="🔍"),
-    st.Page("pages/5_設定.py",          title=s.get("settings_page_name","設定"),        icon="⚙️"),
+    st.Page("pages/0_首頁.py",         title=s.get("home_page_name",     "首頁"),        icon="🏠", default=True, url_path="home"),
+    st.Page("pages/1_台股.py",         title=s.get("tw_page_name",       "台股"),        icon="🇹🇼", url_path="tw"),
+    st.Page("pages/2_美股.py",         title=s.get("us_page_name",       "美股"),        icon="🇺🇸", url_path="us"),
+    st.Page("pages/3_K線圖.py",        title=s.get("chart_page_name",    "K線圖"),       icon="📈", url_path="chart"),
+    st.Page("pages/4_持倉管理.py",     title=s.get("holdings_page_name", "持倉管理"),    icon="💼", url_path="holdings"),
+    st.Page("pages/6_全球股市.py",     title=s.get("global_page_name",   "全球股市"),    icon="🌍", url_path="global"),
+    st.Page("pages/7_個股詳細資訊.py", title=s.get("detail_page_name",   "個股詳細資訊"), icon="🔍", url_path="detail"),
+    st.Page("pages/5_設定.py",         title=s.get("settings_page_name", "設定"),        icon="⚙️", url_path="settings"),
 ])
+
+# Mobile bottom navigation bar (fixed, only visible on ≤640px screens)
+st.markdown("""
+<nav class="mobile-bottom-nav">
+    <a href="/home">
+        <span class="nav-icon">🏠</span>首頁
+    </a>
+    <a href="/tw">
+        <span class="nav-icon">🇹🇼</span>台股
+    </a>
+    <a href="/us">
+        <span class="nav-icon">🇺🇸</span>美股
+    </a>
+    <a href="/holdings">
+        <span class="nav-icon">💼</span>持倉
+    </a>
+    <a href="/global">
+        <span class="nav-icon">🌍</span>全球
+    </a>
+    <a href="/settings">
+        <span class="nav-icon">⚙️</span>設定
+    </a>
+</nav>
+""", unsafe_allow_html=True)
+
 pg.run()
