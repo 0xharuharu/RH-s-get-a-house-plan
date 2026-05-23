@@ -1,0 +1,23 @@
+# ── Personal data (never commit to git) ───────────────────────────────────────
+data/portfolio.json
+
+# ── Streamlit secrets (API tokens, Gist credentials) ──────────────────────────
+.streamlit/secrets.toml
+
+# ── Python cache ──────────────────────────────────────────────────────────────
+__pycache__/
+*.pyc
+*.pyo
+.Python
+*.egg-info/
+dist/
+build/
+
+# ── Local environment ─────────────────────────────────────────────────────────
+.env
+.venv
+venv/
+env/
+
+# ── macOS ────────────────────────────────────────────────────────────────────
+.DS_Store
