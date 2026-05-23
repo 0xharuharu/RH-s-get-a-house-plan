@@ -93,14 +93,14 @@ hr { border-color: rgba(255,255,255,0.08); }
 }
 
 /* ── Stock card action buttons: 2-line emoji+text ── */
-[data-testid="stVerticalBlockBorderWrapper"] .stButton > button {
-    padding: 0.25rem 0.15rem !important;
+[data-testid="stVerticalBlockBorderWrapper"] button {
+    padding: 0.2rem 0.1rem !important;
 }
-[data-testid="stVerticalBlockBorderWrapper"] .stButton > button p {
+[data-testid="stVerticalBlockBorderWrapper"] button p {
     white-space: pre-line !important;
     text-align: center !important;
-    line-height: 1.25 !important;
-    font-size: 0.62em !important;
+    line-height: 1.15 !important;
+    font-size: 0.52em !important;
 }
 
 /* ── Mobile bottom nav (hidden on desktop) ── */
