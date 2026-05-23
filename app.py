@@ -73,13 +73,23 @@ hr { border-color: rgba(255,255,255,0.08); }
 
 /* ── Stock card: name label (theme-adaptive) ── */
 .stock-card-name {
-    font-size: 0.74em;
-    margin-bottom: 3px;
-    line-height: 1.3;
-    color: #666;
+    font-size: 0.90em;
+    margin-bottom: 6px;
+    line-height: 1.55;
+    color: #444;
 }
 @media (prefers-color-scheme: dark) {
-    .stock-card-name { color: rgba(220,220,220,0.50); }
+    .stock-card-name { color: rgba(230,230,230,0.70); }
+}
+
+/* ── Stock card: caption / sub-info text ── */
+.stock-card-caption {
+    font-size: 0.71em;
+    line-height: 1.45;
+    color: #888;
+}
+@media (prefers-color-scheme: dark) {
+    .stock-card-caption { color: rgba(180,180,180,0.55); }
 }
 
 /* ── Stock card action buttons: 2-line emoji+text ── */
@@ -90,7 +100,7 @@ hr { border-color: rgba(255,255,255,0.08); }
     white-space: pre-line !important;
     text-align: center !important;
     line-height: 1.25 !important;
-    font-size: 0.70em !important;
+    font-size: 0.62em !important;
 }
 
 /* ── Mobile bottom nav (hidden on desktop) ── */

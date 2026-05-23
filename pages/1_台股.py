@@ -101,13 +101,21 @@ def render_tw_card(ticker: str, grp: str):
             unsafe_allow_html=True,
         )
 
-        # ── 52-week progress ──────────────────────────────────────────────
+        # ── 52-week range bar ─────────────────────────────────────────────
         if info.get("week_52_high") and info.get("week_52_low"):
-            lo, hi, cur = info["week_52_low"], info["week_52_high"], info["price"]
-            ratio = (cur - lo) / (hi - lo) if hi > lo else 0.5
-            st.progress(float(min(max(ratio, 0.0), 1.0)))
-            st.caption(
-                f"52週 {format_price_md(lo, True)} – {format_price_md(hi, True)}"
+            lo, hi = info["week_52_low"], info["week_52_high"]
+            ratio = (info["price"] - lo) / (hi - lo) if hi > lo else 0.5
+            pct = min(max(ratio * 100, 0), 100)
+            st.markdown(
+                f"<div style='margin:5px 0 3px'>"
+                f"<div style='height:3px;border-radius:2px;"
+                f"background:rgba(128,128,128,0.18);overflow:hidden'>"
+                f"<div style='height:100%;width:{pct:.0f}%;"
+                f"background:#4dabf5;border-radius:2px'></div></div>"
+                f"<div class='stock-card-caption'>年位置 {pct:.0f}%"
+                f"　{format_price_md(lo, True)} – {format_price_md(hi, True)}</div>"
+                f"</div>",
+                unsafe_allow_html=True,
             )
 
         # ── P/E + Volume ──────────────────────────────────────────────────
@@ -115,7 +123,10 @@ def render_tw_card(ticker: str, grp: str):
         if info.get("pe_ratio"):
             meta.append(f"P/E {info['pe_ratio']:.1f}")
         meta.append(f"量 {format_volume(info['volume'])}")
-        st.caption("　".join(meta))
+        st.markdown(
+            f"<div class='stock-card-caption'>{'　'.join(meta)}</div>",
+            unsafe_allow_html=True,
+        )
 
         # ── Action buttons ────────────────────────────────────────────────
         b1, b2, b3, b4 = st.columns(4)
@@ -140,7 +151,7 @@ def render_tw_card(ticker: str, grp: str):
                 else:
                     st.toast("已在首頁追蹤中")
         with b4:
-            if st.button("✕\n取消收藏", key=f"tw_rm_{ticker}_{grp}",
+            if st.button("❌\n取消收藏", key=f"tw_rm_{ticker}_{grp}",
                          use_container_width=True, type="secondary"):
                 remove_from_group(portfolio, ticker, grp, "tw")
                 save_portfolio(portfolio)
