@@ -47,8 +47,9 @@ st.markdown("""
 /* ── Tabs ── */
 .stTabs [data-baseweb="tab"] {
     border-radius: 6px 6px 0 0;
-    padding: 6px 18px;
-    font-size: 0.93em;
+    padding: 4px 13px;
+    font-size: 0.84em;
+    font-weight: 500;
 }
 
 /* ── Dividers ── */
