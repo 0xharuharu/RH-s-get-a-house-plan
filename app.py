@@ -7,7 +7,7 @@ st.set_page_config(
     page_title="股票 Dashboard",
     page_icon="📈",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="auto",
 )
 
 st.markdown("""
@@ -97,9 +97,21 @@ hr { border-color: rgba(255,255,255,0.08); }
     [data-testid="column"] {
         min-width: 100px !important;
     }
-    /* Sidebar: always collapsed on mobile */
-    [data-testid="stSidebar"] {
-        min-width: 0 !important;
+    /* Sidebar toggle button: bigger touch target */
+    [data-testid="collapsedControl"] {
+        width: 2.8rem !important;
+        height: 2.8rem !important;
+        background: rgba(255,255,255,0.10) !important;
+        border-radius: 10px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        top: 0.5rem !important;
+        left: 0.5rem !important;
+    }
+    [data-testid="collapsedControl"] svg {
+        width: 1.3rem !important;
+        height: 1.3rem !important;
     }
     /* Tabs: smaller text */
     .stTabs [data-baseweb="tab"] {
