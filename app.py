@@ -13,8 +13,11 @@ st.set_page_config(
 st.markdown("""
 <style>
 /* ── Hide Streamlit chrome ── */
-#MainMenu, footer, header { visibility: hidden; }
-[data-testid="stToolbar"] { display: none; }
+#MainMenu, footer, header { display: none !important; }
+[data-testid="stToolbar"]  { display: none !important; }
+/* Streamlit Community Cloud bottom badge (always hidden) */
+[class*="viewerBadge"]     { display: none !important; }
+[data-testid="stDecoration"] { display: none !important; }
 
 /* ── Compact layout (values injected by Python below) ── */
 .block-container {
@@ -120,7 +123,8 @@ hr { border-color: rgba(255,255,255,0.08); }
         height: 58px;
         background: #0e1117;
         border-top: 1px solid rgba(255,255,255,0.13);
-        z-index: 99999;
+        /* Max possible z-index: sit above all Streamlit overlays */
+        z-index: 2147483647;
         align-items: stretch;
         /* iPhone home indicator safe area */
         padding-bottom: env(safe-area-inset-bottom, 0px);
