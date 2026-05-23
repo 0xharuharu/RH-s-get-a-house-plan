@@ -151,6 +151,17 @@ hr { border-color: rgba(255,255,255,0.08); }
         font-size: 1.3rem;
         line-height: 1.3;
     }
+    /* Fill the gap between nav bar and Streamlit badge with same background */
+    .mobile-bottom-nav::after {
+        content: '';
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 44px;
+        background: #0e1117;
+        z-index: 2147483646;
+    }
 }
 </style>
 """, unsafe_allow_html=True)
