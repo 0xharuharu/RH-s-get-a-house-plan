@@ -15,7 +15,7 @@ if "portfolio" not in st.session_state:
 portfolio = st.session_state.portfolio
 settings = portfolio.setdefault("settings", {})
 
-st.title("⚙️ 設定")
+st.header("⚙️ 設定")
 
 # ── 個人設定（雙持倉 + 密碼）─────────────────────────────────────────────────────
 st.subheader("🔐 個人設定")

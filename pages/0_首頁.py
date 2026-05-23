@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from itertools import zip_longest
 import streamlit as st
 
 from utils.portfolio import (
@@ -25,7 +26,7 @@ if "detail" in st.query_params:
     st.switch_page("pages/7_個股詳細資訊.py")
 
 dashboard_name = settings.get("dashboard_name", "股票 Dashboard")
-st.title(f"📈 {dashboard_name}")
+st.header(f"📈 {dashboard_name}")
 st.caption("台股 / 美股 追蹤 · K線圖 · 持倉管理")
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -344,43 +345,42 @@ if all_tracked_tickers:
         gainers = ranked[:n]
         losers = ranked[-n:][::-1]
 
-        col_g, col_l = st.columns(2)
-        with col_g:
-            st.markdown(f"**🔴 強勢股（今日漲幅前{n}）**")
-            for info in gainers:
-                mbs = find_sectors_for_ticker(info["ticker"])
-                badge_html = (" " + _badge(mbs[0][1])) if mbs else ""
-                lbl = info["label"].replace("&", "&amp;")
-                price = format_price(info["price"], info["is_tw"])
-                st.markdown(
-                    f"<div style='padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.05)'>"
-                    f"<div style='font-weight:600;line-height:1.4'>"
-                    f"<a href='?detail={info['ticker']}' style='color:inherit;text-decoration:none'>{lbl}</a>"
-                    f"{badge_html}</div>"
-                    f"<div style='font-size:0.88em;margin-top:2px;color:rgba(255,255,255,0.8)'>"
-                    f"{price}&nbsp;&nbsp;"
-                    f"<span style='color:#ff4b4b;font-weight:600'>▲ {info['change_pct']:+.2f}%</span></div>"
-                    f"</div>",
-                    unsafe_allow_html=True,
-                )
-        with col_l:
-            st.markdown(f"**🟢 弱勢股（今日跌幅前{n}）**")
-            for info in losers:
-                mbs = find_sectors_for_ticker(info["ticker"])
-                badge_html = (" " + _badge(mbs[0][1])) if mbs else ""
-                lbl = info["label"].replace("&", "&amp;")
-                price = format_price(info["price"], info["is_tw"])
-                st.markdown(
-                    f"<div style='padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.05)'>"
-                    f"<div style='font-weight:600;line-height:1.4'>"
-                    f"<a href='?detail={info['ticker']}' style='color:inherit;text-decoration:none'>{lbl}</a>"
-                    f"{badge_html}</div>"
-                    f"<div style='font-size:0.88em;margin-top:2px;color:rgba(255,255,255,0.8)'>"
-                    f"{price}&nbsp;&nbsp;"
-                    f"<span style='color:#21c55d;font-weight:600'>▼ {abs(info['change_pct']):.2f}%</span></div>"
-                    f"</div>",
-                    unsafe_allow_html=True,
-                )
+        def _gainer_loser_cell(info: dict, bull: bool) -> str:
+            mbs = find_sectors_for_ticker(info["ticker"])
+            badge_html = (" " + _badge(mbs[0][1])) if mbs else ""
+            clr = "#ff4b4b" if bull else "#21c55d"
+            sign = "▲" if bull else "▼"
+            pct = info["change_pct"] if bull else abs(info["change_pct"])
+            flag = "🇹🇼 " if info.get("is_tw") else "🇺🇸 "
+            lbl = info["label"].replace("&", "&amp;")
+            ticker = info["ticker"]
+            price = format_price(info["price"], info["is_tw"])
+            return (
+                f"<div style='font-weight:600;line-height:1.4'>"
+                f"<a href='?detail={ticker}' style='color:inherit;text-decoration:none'>"
+                f"<span style='font-size:0.85em'>{flag}</span>{lbl}</a>"
+                f"{badge_html}</div>"
+                f"<div style='font-size:0.85em;margin-top:2px'>"
+                f"<span style='color:{clr};font-weight:600'>{sign} {pct:.2f}%</span>"
+                f"&nbsp;&nbsp;{price}</div>"
+            )
+
+        cell_l = "padding:5px 16px 5px 0"
+        cell_r = "padding:5px 0 5px 16px"
+        items_html = "".join(
+            f"<div style='{cell_l}'>{_gainer_loser_cell(g, True) if g else ''}</div>"
+            f"<div style='{cell_r}'>{_gainer_loser_cell(l, False) if l else ''}</div>"
+            for g, l in zip_longest(gainers, losers)
+        )
+        hdr = "font-size:0.88em;font-weight:600;padding-bottom:8px"
+        st.markdown(
+            f"<div style='display:grid;grid-template-columns:1fr 1fr'>"
+            f"<div style='{hdr};padding-right:16px'>🔴 強勢股（今日漲幅前{n}）</div>"
+            f"<div style='{hdr};padding-left:16px'>🟢 弱勢股（今日跌幅前{n}）</div>"
+            f"{items_html}"
+            f"</div>",
+            unsafe_allow_html=True,
+        )
 
     st.divider()
 
@@ -404,92 +404,101 @@ else:
             st.rerun()
 
     def _sector_block(sectors: list[dict], is_tw_market: bool):
-        for s in sectors:
-            avg = s["avg_change_pct"]
-            clr = "#ff4b4b" if avg >= 0 else "#21c55d"
-            sign = "▲" if avg >= 0 else "▼"
-            with st.container(border=True):
-                head_col, pct_col = st.columns([5, 2])
-                with head_col:
-                    st.markdown(
-                        f"<span style='font-size:1.05em;font-weight:700'>"
-                        f"{s['icon']} {s['name']}</span>"
-                        f"<br><small style='color:#888'>{s['desc']}</small>",
-                        unsafe_allow_html=True,
-                    )
-                with pct_col:
-                    st.markdown(
-                        f"<div style='text-align:right;font-size:1.25em;"
-                        f"font-weight:700;color:{clr};padding-top:6px'>"
-                        f"{sign} {abs(avg):.2f}%</div>",
-                        unsafe_allow_html=True,
-                    )
-                top3 = s["stocks"][:3]
-                if top3:
-                    chips = []
-                    for si in top3:
-                        sc = "#ff4b4b" if si["change_pct"] >= 0 else "#21c55d"
-                        arrow = "▲" if si["change_pct"] >= 0 else "▼"
-                        nm = si["display_name"] if is_tw_market else si["ticker"]
-                        chips.append(
-                            f"<span style='display:inline-block;"
-                            f"background:rgba(255,255,255,0.06);border-radius:6px;"
-                            f"padding:2px 8px;margin:1px 3px 1px 0;font-size:0.82em;"
-                            f"color:{sc}'>{nm}&nbsp;{arrow}{abs(si['change_pct']):.1f}%</span>"
-                        )
-                    st.markdown(" ".join(chips), unsafe_allow_html=True)
+        for row_start in range(0, len(sectors), 2):
+            row = sectors[row_start : row_start + 2]
+            cols = st.columns(2)
+            for col, s in zip(cols, row):
+                avg = s["avg_change_pct"]
+                clr = "#ff4b4b" if avg >= 0 else "#21c55d"
+                sign = "▲" if avg >= 0 else "▼"
+                with col:
+                    with st.container(border=True):
+                        head_col, pct_col = st.columns([5, 2])
+                        with head_col:
+                            st.markdown(
+                                f"<span style='font-size:0.95em;font-weight:700'>"
+                                f"{s['icon']} {s['name']}</span>"
+                                f"<br><small style='color:#888'>{s['desc']}</small>",
+                                unsafe_allow_html=True,
+                            )
+                        with pct_col:
+                            st.markdown(
+                                f"<div style='text-align:right;font-size:1.1em;"
+                                f"font-weight:700;color:{clr};padding-top:4px'>"
+                                f"{sign} {abs(avg):.2f}%</div>",
+                                unsafe_allow_html=True,
+                            )
+                        top3 = s["stocks"][:3]
+                        if top3:
+                            chips = []
+                            for si in top3:
+                                sc = "#ff4b4b" if si["change_pct"] >= 0 else "#21c55d"
+                                arrow = "▲" if si["change_pct"] >= 0 else "▼"
+                                nm = si["display_name"] if is_tw_market else si["ticker"]
+                                chips.append(
+                                    f"<span style='display:inline-block;"
+                                    f"background:rgba(255,255,255,0.06);border-radius:6px;"
+                                    f"padding:2px 6px;margin:1px 2px 1px 0;font-size:0.78em;"
+                                    f"color:{sc}'>{nm}&nbsp;{arrow}{abs(si['change_pct']):.1f}%</span>"
+                                )
+                            st.markdown(" ".join(chips), unsafe_allow_html=True)
 
-    def _stock_rows(movers: list[dict], bull: bool):
-        for info in movers:
-            mbs = find_sectors_for_ticker(info["ticker"])
-            badge_html = (" " + _badge(mbs[0][1])) if mbs else ""
-            sign = "▲" if bull else "▼"
-            clr = "#ff4b4b" if bull else "#21c55d"
-            pct = abs(info["change_pct"])
-            lbl = info["label"].replace("&", "&amp;")
-            price = format_price(info["price"], info["is_tw"])
-            st.markdown(
-                f"<div style='padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.05)'>"
-                f"<div style='font-weight:600;line-height:1.4'>"
-                f"<a href='?detail={info['ticker']}' style='color:inherit;text-decoration:none'>{lbl}</a>"
-                f"{badge_html}</div>"
-                f"<div style='font-size:0.88em;margin-top:2px;color:rgba(255,255,255,0.8)'>"
-                f"{price}&nbsp;&nbsp;"
-                f"<span style='color:{clr};font-weight:600'>{sign} {pct:.2f}%</span></div>"
-                f"</div>",
-                unsafe_allow_html=True,
-            )
+    def _hot_stock_cell(info: dict, bull: bool) -> str:
+        mbs = find_sectors_for_ticker(info["ticker"])
+        badge_html = (" " + _badge(mbs[0][1])) if mbs else ""
+        clr = "#ff4b4b" if bull else "#21c55d"
+        sign = "▲" if bull else "▼"
+        pct = abs(info["change_pct"])
+        lbl = info["label"].replace("&", "&amp;")
+        ticker = info["ticker"]
+        price = format_price(info["price"], info["is_tw"])
+        return (
+            f"<div style='font-weight:600;line-height:1.4'>"
+            f"<a href='?detail={ticker}' style='color:inherit;text-decoration:none'>{lbl}</a>"
+            f"{badge_html}</div>"
+            f"<div style='font-size:0.85em;margin-top:2px'>"
+            f"<span style='color:{clr};font-weight:600'>{sign} {pct:.2f}%</span>"
+            f"&nbsp;&nbsp;{price}</div>"
+        )
 
-    col_tw_hot, col_us_hot = st.columns(2)
+    def _pair_movers_grid(gainers: list[dict], losers: list[dict]):
+        cell_l = "padding:5px 16px 5px 0"
+        cell_r = "padding:5px 0 5px 16px"
+        items = "".join(
+            f"<div style='{cell_l}'>{_hot_stock_cell(g, True) if g else ''}</div>"
+            f"<div style='{cell_r}'>{_hot_stock_cell(l, False) if l else ''}</div>"
+            for g, l in zip_longest(gainers, losers)
+        )
+        hdr = "font-size:0.88em;font-weight:600;padding-bottom:8px"
+        st.markdown(
+            f"<div style='display:grid;grid-template-columns:1fr 1fr'>"
+            f"<div style='{hdr};padding-right:16px'>🔴 強勢</div>"
+            f"<div style='{hdr};padding-left:16px'>🟢 弱勢</div>"
+            f"{items}"
+            f"</div>",
+            unsafe_allow_html=True,
+        )
 
-    with col_tw_hot:
-        st.markdown("**🇹🇼 台股熱點**")
+    hot_tab_tw, hot_tab_us = st.tabs(["🇹🇼 台股熱點", "🇺🇸 美股熱點"])
+
+    with hot_tab_tw:
         st.markdown("**🏭 族群排行**")
         with st.spinner("計算族群…"):
             tw_sectors = get_sector_performance("tw")
         _sector_block(tw_sectors, is_tw_market=True)
-
-        st.markdown("")
+        st.divider()
         st.markdown("**📈 個股排行 Top 10**")
         with st.spinner("載入個股…"):
             tw_gainers, tw_losers = get_market_movers("tw", top_n=10)
-        st.markdown("🔴 強勢")
-        _stock_rows(tw_gainers, bull=True)
-        st.markdown("🟢 弱勢")
-        _stock_rows(tw_losers, bull=False)
+        _pair_movers_grid(tw_gainers, tw_losers)
 
-    with col_us_hot:
-        st.markdown("**🇺🇸 美股熱點**")
+    with hot_tab_us:
         st.markdown("**🏭 族群排行**")
         with st.spinner("計算族群…"):
             us_sectors = get_sector_performance("us")
         _sector_block(us_sectors, is_tw_market=False)
-
-        st.markdown("")
+        st.divider()
         st.markdown("**📈 個股排行 Top 10**")
         with st.spinner("載入個股…"):
             us_gainers, us_losers = get_market_movers("us", top_n=10)
-        st.markdown("🔴 強勢")
-        _stock_rows(us_gainers, bull=True)
-        st.markdown("🟢 弱勢")
-        _stock_rows(us_losers, bull=False)
+        _pair_movers_grid(us_gainers, us_losers)

@@ -68,7 +68,7 @@ def rec_text(val: float) -> str:
 
 
 # ── Search bar ────────────────────────────────────────────────────────────────
-st.title("🔍 個股詳細資訊")
+st.header("🔍 個股詳細資訊")
 
 col_q, col_btn = st.columns([5, 1])
 with col_q:

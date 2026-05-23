@@ -391,6 +391,55 @@ def remove_profile_holding(portfolio: dict, profile_id: str, ticker: str):
                 grp.remove(t)
 
 
+def get_capital(portfolio: dict, profile_id: str) -> float:
+    return float(portfolio.get(profile_id, {}).get("capital", 0.0))
+
+
+def set_capital(portfolio: dict, profile_id: str, amount: float):
+    portfolio.setdefault(profile_id, {})["capital"] = float(amount)
+
+
+def get_target_pct(portfolio: dict, profile_id: str) -> float:
+    return float(portfolio.get(profile_id, {}).get("target_pct", 80.0))
+
+
+def set_target_pct(portfolio: dict, profile_id: str, pct: float):
+    portfolio.setdefault(profile_id, {})["target_pct"] = float(pct)
+
+
+def log_transaction(
+    portfolio: dict,
+    profile_id: str,
+    ticker: str,
+    action: str,          # "buy" | "sell"
+    qty: float,
+    price: float,
+    cost_basis: float | None = None,
+    date: str | None = None,
+):
+    """Append a transaction record. Realized P&L is computed for sells."""
+    from datetime import date as _d
+    if date is None:
+        date = str(_d.today())
+    realized_pnl = None
+    if action == "sell" and cost_basis is not None:
+        realized_pnl = round((price - cost_basis) * qty, 4)
+    record = {
+        "date": date,
+        "ticker": ticker,
+        "action": action,
+        "qty": float(qty),
+        "price": float(price),
+        "cost_basis": float(cost_basis) if cost_basis is not None else None,
+        "realized_pnl": realized_pnl,
+    }
+    portfolio.setdefault(profile_id, {}).setdefault("transactions", []).append(record)
+
+
+def get_transactions(portfolio: dict, profile_id: str) -> list[dict]:
+    return portfolio.get(profile_id, {}).get("transactions", [])
+
+
 def calc_summary(
     portfolio: dict,
     prices: dict[str, float],

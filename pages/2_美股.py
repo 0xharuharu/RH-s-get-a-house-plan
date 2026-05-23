@@ -46,7 +46,7 @@ with st.sidebar:
         st.rerun()
 
 # ── Main ──────────────────────────────────────────────────────────────────────
-st.title("🇺🇸 美股")
+st.header("🇺🇸 美股")
 
 group_names = list(portfolio.get("us_groups", {}).keys())
 if not group_names:
@@ -119,28 +119,28 @@ def render_us_card(ticker: str, grp: str):
         # ── Action buttons ────────────────────────────────────────────────
         b1, b2, b3, b4 = st.columns(4)
         with b1:
-            if st.button("🔍\n查看個股", key=f"us_det_{ticker}_{grp}",
-                         use_container_width=True):
+            if st.button("🔍", key=f"us_det_{ticker}_{grp}",
+                         use_container_width=True, help="查看個股"):
                 st.session_state.detail_ticker = ticker
                 st.switch_page("pages/7_個股詳細資訊.py")
         with b2:
-            if st.button("💼\n加入持有", key=f"us_hold_{ticker}_{grp}",
-                         use_container_width=True):
+            if st.button("💼", key=f"us_hold_{ticker}_{grp}",
+                         use_container_width=True, help="加入持有"):
                 portfolio["us_groups"].setdefault("持有", [])
                 add_to_group(portfolio, ticker, "持有", "us")
                 save_portfolio(portfolio)
                 st.toast(f"{ticker} 已加入「持有」")
         with b3:
-            if st.button("🏠\n首頁追蹤", key=f"us_home_{ticker}_{grp}",
-                         use_container_width=True):
+            if st.button("🏠", key=f"us_home_{ticker}_{grp}",
+                         use_container_width=True, help="首頁追蹤"):
                 if add_to_home_watch(portfolio, ticker):
                     save_portfolio(portfolio)
                     st.toast(f"{ticker} 已加入首頁追蹤")
                 else:
                     st.toast("已在首頁追蹤中")
         with b4:
-            if st.button("❌\n取消收藏", key=f"us_rm_{ticker}_{grp}",
-                         use_container_width=True, type="secondary"):
+            if st.button("❌", key=f"us_rm_{ticker}_{grp}",
+                         use_container_width=True, type="secondary", help="取消收藏"):
                 remove_from_group(portfolio, ticker, grp, "us")
                 save_portfolio(portfolio)
                 st.rerun()

@@ -47,13 +47,21 @@ st.markdown("""
 /* ── Tabs ── */
 .stTabs [data-baseweb="tab"] {
     border-radius: 6px 6px 0 0;
-    padding: 4px 13px;
-    font-size: 0.84em;
+    padding: 4px 10px;
+    font-size: 13px;
     font-weight: 500;
 }
 
 /* ── Dividers ── */
 hr { border-color: rgba(255,255,255,0.08); }
+
+/* ── Plain HTML tables (no Streamlit default borders) ── */
+[data-testid="stMarkdownContainer"] table,
+[data-testid="stMarkdownContainer"] th,
+[data-testid="stMarkdownContainer"] td {
+    border: none !important;
+    background: transparent !important;
+}
 
 /* ── Stock name hyperlinks (query-param nav) ── */
 .stock-link a {
@@ -92,15 +100,10 @@ hr { border-color: rgba(255,255,255,0.08); }
     .stock-card-caption { color: rgba(180,180,180,0.55); }
 }
 
-/* ── Stock card action buttons: 2-line emoji+text ── */
+/* ── Stock card action buttons (emoji-only) ── */
 [data-testid="stVerticalBlockBorderWrapper"] button {
-    padding: 0.2rem 0.1rem !important;
-}
-[data-testid="stVerticalBlockBorderWrapper"] button p {
-    white-space: pre-line !important;
-    text-align: center !important;
-    line-height: 1.15 !important;
-    font-size: 0.52em !important;
+    padding: 0.3rem 0.1rem !important;
+    font-size: 1.1rem !important;
 }
 
 /* ── Mobile bottom nav (hidden on desktop) ── */
@@ -139,8 +142,8 @@ hr { border-color: rgba(255,255,255,0.08); }
     }
     /* Tabs: smaller text */
     .stTabs [data-baseweb="tab"] {
-        padding: 4px 10px !important;
-        font-size: 0.85em !important;
+        padding: 4px 8px !important;
+        font-size: 11px !important;
     }
     /* Expanders: less padding */
     [data-testid="stExpander"] summary {
@@ -222,7 +225,8 @@ pg = st.navigation([
     st.Page("pages/1_台股.py",         title=s.get("tw_page_name",       "台股"),        icon="🇹🇼", url_path="tw"),
     st.Page("pages/2_美股.py",         title=s.get("us_page_name",       "美股"),        icon="🇺🇸", url_path="us"),
     st.Page("pages/3_K線圖.py",        title=s.get("chart_page_name",    "K線圖"),       icon="📈", url_path="chart"),
-    st.Page("pages/4_持倉管理.py",     title=s.get("holdings_page_name", "持倉管理"),    icon="💼", url_path="holdings"),
+    st.Page("pages/4_持倉管理.py",     title=s.get("holdings_page_name",  "持倉管理"),    icon="💼", url_path="holdings"),
+    st.Page("pages/8_倉位規劃.py",     title=s.get("position_page_name", "倉位規劃"),    icon="📐", url_path="position"),
     st.Page("pages/6_全球股市.py",     title=s.get("global_page_name",   "全球股市"),    icon="🌍", url_path="global"),
     st.Page("pages/7_個股詳細資訊.py", title=s.get("detail_page_name",   "個股詳細資訊"), icon="🔍", url_path="detail"),
     st.Page("pages/5_設定.py",         title=s.get("settings_page_name", "設定"),        icon="⚙️", url_path="settings"),
@@ -242,6 +246,9 @@ st.markdown("""
     </a>
     <a href="/holdings">
         <span class="nav-icon">💼</span>持倉
+    </a>
+    <a href="/position">
+        <span class="nav-icon">📐</span>規劃
     </a>
     <a href="/global">
         <span class="nav-icon">🌍</span>全球

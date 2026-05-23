@@ -10,6 +10,7 @@ from utils.portfolio import (
     get_profile_name, get_profile_pin_hash, verify_pin,
     get_profile_holdings, upsert_profile_holding, remove_profile_holding,
     set_profile_pin, clear_profile_pin,
+    log_transaction,
 )
 from utils.stock_data import (
     get_stock_info, TW_NAMES, TW_NAMES_REVERSE,
@@ -216,43 +217,146 @@ def render_holdings_section(section: dict, title: str, profile_id: str, prices: 
         pnl_p = ((pnl / total * 100) if total else 0) if pnl is not None else None
         pos_pct = (total / total_cost * 100) if total_cost else 0
 
+        chg_p = ((price - cost_ps) / cost_ps * 100) if (price and cost_ps) else None
+        price_clr = "#ff4b4b" if (chg_p or 0) >= 0 else "#21c55d"
+        price_sign = "▲" if (chg_p or 0) >= 0 else "▼"
+        price_part = (
+            f"<b>{fmt(price)}</b>&nbsp;&nbsp;"
+            f"<span style='color:{price_clr};font-size:0.88em'>{price_sign}{abs(chg_p):.2f}%</span>"
+        ) if price else "<b>—</b>"
+
+        pnl_part = ""
+        if pnl is not None and pnl_p is not None:
+            pnl_clr = "#ff4b4b" if pnl >= 0 else "#21c55d"
+            pnl_part = (
+                f"<span style='color:{pnl_clr};font-size:1.28em;font-weight:700'>{pnl:+,.0f}</span>"
+                f"&ensp;<span style='color:{pnl_clr};font-size:1.0em;font-weight:600'>{pnl_p:+.2f}%</span>"
+            )
+        else:
+            pnl_part = "<span style='opacity:0.45'>—</span>"
+
+        lbl = "font-size:0.82em;opacity:0.5;margin-bottom:3px"
+        val = "font-size:1.1em;font-weight:600"
+
+        mode_key = f"edit_mode_{profile_id}_{ticker}"
+        if mode_key not in st.session_state:
+            st.session_state[mode_key] = None
+
         with st.container(border=True):
-            # ── 名稱 + 倉位條 ─────────────────────────────────────────────────
-            st.markdown(f"**{holding_label(ticker)}**")
-            st.progress(min(pos_pct / 100, 1.0))
-            st.caption(f"倉位 {pos_pct:.1f}%")
+            st.markdown(
+                # ── 標題列：名稱 + 倉位 pill badge ──
+                f"<div style='display:flex;align-items:center;gap:8px;margin-bottom:10px'>"
+                f"<span style='font-weight:700;font-size:1.22em'>{holding_label(ticker)}</span>"
+                f"<span style='background:rgba(77,171,245,0.12);"
+                f"border:1px solid rgba(77,171,245,0.3);color:#4dabf5;"
+                f"padding:1px 8px;border-radius:10px;font-size:0.76em;font-weight:600'>"
+                f"倉位 {pos_pct:.1f}%</span>"
+                f"</div>"
+                # ── 四格資料：均價｜現價｜持股數｜總投入 ──
+                f"<div style='display:grid;grid-template-columns:1fr 1.6fr 1fr 1fr;"
+                f"gap:6px 14px;margin-bottom:10px'>"
+                f"<div><div style='{lbl}'>均價</div><div style='{val}'>{fmt(cost_ps)}</div></div>"
+                f"<div><div style='{lbl}'>現價</div><div style='{val}'>{price_part}</div></div>"
+                f"<div><div style='{lbl}'>持股數</div><div style='{val}'>{qty:,.0f} 股</div></div>"
+                f"<div><div style='{lbl}'>總投入</div><div style='{val}'>{total:,.0f}</div></div>"
+                f"</div>"
+                # ── 損益列 ──
+                f"<div style='border-top:1px solid rgba(128,128,128,0.13);padding-top:8px'>"
+                f"<span style='{lbl}'>損益&ensp;</span>{pnl_part}"
+                f"</div>",
+                unsafe_allow_html=True,
+            )
 
-            # ── 價格三欄（手機上 min-width 讓三欄在窄螢幕自動換行） ─────────
-            c1, c2, c3 = st.columns(3)
-            c1.metric("持股均價", fmt(cost_ps))
-            if price is not None:
-                chg = price - cost_ps
-                chg_p = (chg / cost_ps * 100) if cost_ps else 0
-                c2.metric("現價", fmt(price), f"{chg_p:+.2f}%")
-            else:
-                c2.metric("現價", "—")
-            c3.metric("持股數", f"{qty:,.0f} 股")
+            # ── 操作面板（預設收合） ───────────────────────────────────────────
+            with st.expander("編輯"):
+                ab, sb, eb, db = st.columns([3, 3, 3, 1])
+                with ab:
+                    if st.button("📈 買入", key=f"ab_{profile_id}_{ticker}",
+                                 use_container_width=True, help="記錄買入，自動計算新均價"):
+                        st.session_state[mode_key] = None if st.session_state[mode_key] == "buy" else "buy"
+                        st.rerun()
+                with sb:
+                    if st.button("📉 賣出", key=f"sb_{profile_id}_{ticker}",
+                                 use_container_width=True, help="記錄賣出，減少持股數"):
+                        st.session_state[mode_key] = None if st.session_state[mode_key] == "sell" else "sell"
+                        st.rerun()
+                with eb:
+                    if st.button("✏️ 編輯", key=f"eb_{profile_id}_{ticker}",
+                                 use_container_width=True, help="直接修改持股數與均價"):
+                        st.session_state[mode_key] = None if st.session_state[mode_key] == "edit" else "edit"
+                        st.rerun()
+                with db:
+                    if st.button("✕", key=f"del_{profile_id}_{ticker}",
+                                 type="secondary", use_container_width=True, help="移除持股"):
+                        remove_profile_holding(portfolio, profile_id, ticker)
+                        save_portfolio(portfolio)
+                        st.rerun()
 
-            # ── 成本 + 損益（兩欄） ────────────────────────────────────────────
-            d1, d2 = st.columns(2)
-            d1.metric("總投入", f"{total:,.0f}")
-            if pnl is not None and pnl_p is not None:
-                d2.metric("損益", f"{pnl:+,.0f}", f"{pnl_p:+.2f}%")
-            else:
-                d2.metric("損益", "—")
+                # ── 買入表單 ──────────────────────────────────────────────────
+                if st.session_state.get(mode_key) == "buy":
+                    with st.form(key=f"buy_form_{profile_id}_{ticker}"):
+                        fc1, fc2 = st.columns(2)
+                        with fc1:
+                            buy_qty = st.number_input("買入股數", min_value=0.0, step=1.0, format="%.0f")
+                        with fc2:
+                            buy_price = st.number_input("買入價格", min_value=0.0, value=float(cost_ps), step=0.01)
+                        if st.form_submit_button("✅ 確認買入", use_container_width=True, type="primary"):
+                            if buy_qty > 0:
+                                new_qty = qty + buy_qty
+                                new_cost = (cost_ps * qty + buy_price * buy_qty) / new_qty
+                                upsert_profile_holding(portfolio, profile_id, ticker, new_cost, new_qty)
+                                log_transaction(portfolio, profile_id, ticker, "buy", buy_qty, buy_price)
+                                save_portfolio(portfolio)
+                                st.session_state[mode_key] = None
+                                st.rerun()
 
-            # ── 移除按鈕（靠右，手機上全寬） ─────────────────────────────────
-            _, btn_col = st.columns([7, 3])
-            with btn_col:
-                if st.button(
-                    "✕ 移除",
-                    key=f"del_{profile_id}_{ticker}",
-                    type="secondary",
-                    use_container_width=True,
-                ):
-                    remove_profile_holding(portfolio, profile_id, ticker)
-                    save_portfolio(portfolio)
-                    st.rerun()
+                # ── 賣出表單 ──────────────────────────────────────────────────
+                elif st.session_state.get(mode_key) == "sell":
+                    with st.form(key=f"sell_form_{profile_id}_{ticker}"):
+                        sc1, sc2 = st.columns(2)
+                        with sc1:
+                            sell_qty = st.number_input(
+                                f"賣出股數（持有 {qty:,.0f} 股）",
+                                min_value=0.0, max_value=float(qty), step=1.0, format="%.0f",
+                            )
+                        with sc2:
+                            sell_price = st.number_input(
+                                "賣出價格",
+                                min_value=0.0,
+                                value=float(price) if price else float(cost_ps),
+                                step=0.01,
+                            )
+                        if st.form_submit_button("✅ 確認賣出", use_container_width=True, type="primary"):
+                            if sell_qty > 0:
+                                new_qty = qty - sell_qty
+                                realized = (sell_price - cost_ps) * sell_qty
+                                if new_qty <= 0:
+                                    remove_profile_holding(portfolio, profile_id, ticker)
+                                    st.toast(f"已全數賣出，實現損益 {realized:+,.0f}")
+                                else:
+                                    upsert_profile_holding(portfolio, profile_id, ticker, cost_ps, new_qty)
+                                    st.toast(f"賣出 {sell_qty:,.0f} 股，實現損益 {realized:+,.0f}，剩餘 {new_qty:,.0f} 股")
+                                log_transaction(portfolio, profile_id, ticker, "sell", sell_qty, sell_price, cost_ps)
+                                save_portfolio(portfolio)
+                                st.session_state[mode_key] = None
+                                st.rerun()
+
+                # ── 直接編輯表單 ──────────────────────────────────────────────
+                elif st.session_state.get(mode_key) == "edit":
+                    with st.form(key=f"edit_form_{profile_id}_{ticker}"):
+                        ec1, ec2 = st.columns(2)
+                        with ec1:
+                            new_qty = st.number_input("持股數", min_value=0.0, value=float(qty), step=1.0, format="%.0f")
+                        with ec2:
+                            new_cost = st.number_input("持股均價", min_value=0.0, value=float(cost_ps), step=0.01)
+                        if st.form_submit_button("💾 儲存", use_container_width=True, type="primary"):
+                            if new_qty > 0:
+                                upsert_profile_holding(portfolio, profile_id, ticker, new_cost, new_qty)
+                            else:
+                                remove_profile_holding(portfolio, profile_id, ticker)
+                            save_portfolio(portfolio)
+                            st.session_state[mode_key] = None
+                            st.rerun()
 
 
 # ── Per-profile full UI ────────────────────────────────────────────────────────
@@ -449,7 +553,7 @@ def render_profile_tab(profile_id: str):
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 
-st.title("💼 持倉管理")
+st.header("💼 持倉管理")
 
 # Hide Streamlit's "Press Enter to apply" hint and character counter globally
 st.markdown(

@@ -13,7 +13,7 @@ if "portfolio" not in st.session_state:
     st.session_state.portfolio = load_portfolio()
 portfolio = st.session_state.portfolio
 
-st.title("📈 K線圖")
+st.header("📈 K線圖")
 
 # ── Ticker list：大盤指數永遠在最前面 ────────────────────────────────────────────
 INDEX_TICKERS = ["^TWII", "^GSPC", "^DJI", "^IXIC"]
