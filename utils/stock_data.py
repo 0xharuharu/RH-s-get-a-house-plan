@@ -210,6 +210,7 @@ def get_stock_info(ticker: str) -> dict | None:
             "display_name": get_display_name(ticker, yf_name),
             "label": stock_label(ticker, yf_name),
             "price": current_price,
+            "prev_close": prev_price,
             "change": change,
             "change_pct": change_pct,
             "volume": int(hist["Volume"].iloc[-1]),
@@ -228,6 +229,7 @@ def get_stock_info(ticker: str) -> dict | None:
             mis = get_twse_mis_price(ticker)
             if mis:
                 result["price"] = mis["price"]
+                result["prev_close"] = mis["prev_close"]
                 result["change"] = mis["change"]
                 result["change_pct"] = mis["change_pct"]
                 if mis["volume"] > 0:

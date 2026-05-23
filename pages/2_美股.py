@@ -95,15 +95,16 @@ def render_us_card(ticker: str, grp: str):
                 f"<div style='height:100%;width:{pct:.0f}%;"
                 f"background:#4dabf5;border-radius:2px'></div></div>"
                 f"<div class='stock-card-caption'>年位置 {pct:.0f}%"
-                f"　{format_price_md(lo, False)} – {format_price_md(hi, False)}</div>"
+                f"　{format_price(lo, False)} – {format_price(hi, False)}</div>"
                 f"</div>",
                 unsafe_allow_html=True,
             )
 
-        # ── P/E + Volume ──────────────────────────────────────────────────
+        # ── 昨收 + Volume ──────────────────────────────────────────────────
+        prev = info.get("prev_close")
         meta = []
-        if info.get("pe_ratio"):
-            meta.append(f"P/E {info['pe_ratio']:.1f}")
+        if prev is not None:
+            meta.append(f"昨收 {format_price(prev, False)}")
         meta.append(f"量 {format_volume(info['volume'])}")
         st.markdown(
             f"<div class='stock-card-caption'>{'　'.join(meta)}</div>",
