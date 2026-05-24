@@ -218,43 +218,73 @@ def render_allocation_tab(profile_id: str):
         gap_cost     = target_amt - total_cost_twd
         reached      = cost_vs_tgt >= 100
 
-        # ── Top metrics ───────────────────────────────────────────────────────
-        m1, m2, m3, m4 = st.columns(4)
+        # ── Top metrics (capital + target) ───────────────────────────────────
+        m1, m2 = st.columns(2)
         m1.metric("可投資資金", f"NT${capital:,.0f}")
         m2.metric(f"目標投入金額（{target_pct:.0f}%）", f"NT${target_amt:,.0f}")
-        m3.metric("已投入成本", f"NT${total_cost_twd:,.0f}",
-                  f"達成目標 {cost_vs_tgt:.1f}%", delta_color="off")
-        if reached:
-            m4.metric("距目標差距", "✅ 已達標")
-        else:
-            m4.metric("距目標差距", f"NT${gap_cost:,.0f}",
-                      f"還需投入 {gap_cost / target_amt * 100:.1f}%",
-                      delta_color="off")
 
-        # ── Progress bar: invested cost vs target ─────────────────────────────
-        fill  = min(cost_vs_tgt, 100)
-        clr   = "#21c55d" if reached else "#4dabf5"
-        gap_s = (
-            "<span style='color:#21c55d'>✅ 已達標</span>"
-            if reached
-            else f"<span style='color:#f59f00'>還差 NT${gap_cost:,.0f}</span>"
+        # ── Progress block ────────────────────────────────────────────────────
+        fill      = min(cost_vs_tgt, 100)
+        bar_grad  = ("linear-gradient(90deg,#21c55d,#16a34a)"
+                     if reached else "linear-gradient(90deg,#4dabf5,#2d8ecf)")
+        pct_clr   = "#21c55d" if reached else "#4dabf5"
+        remaining = 100 - cost_vs_tgt
+
+        # Left card: invested cost
+        left_card = (
+            f"<div style='background:rgba(77,171,245,0.08);"
+            f"border:1px solid rgba(77,171,245,0.25);border-radius:8px;padding:12px 16px'>"
+            f"<div style='font-size:0.76em;opacity:0.55;margin-bottom:4px'>已投入成本</div>"
+            f"<div style='font-size:1.18em;font-weight:700'>NT${total_cost_twd:,.0f}</div>"
+            f"<div style='font-size:0.92em;font-weight:700;color:#4dabf5;margin-top:3px'>"
+            f"達成目標 {cost_vs_tgt:.1f}%</div>"
+            f"</div>"
         )
-        hint = (
-            f"= 已投入成本 NT${total_cost_twd:,.0f} ÷ 目標金額 NT${target_amt:,.0f}"
-            f"　｜僅買賣時改變，不受股價影響"
-        )
+
+        # Right card: gap or reached
+        if reached:
+            extra = cost_vs_tgt - 100
+            right_card = (
+                f"<div style='background:rgba(33,197,93,0.08);"
+                f"border:1px solid rgba(33,197,93,0.28);border-radius:8px;padding:12px 16px'>"
+                f"<div style='font-size:0.76em;opacity:0.55;margin-bottom:4px'>距目標差距</div>"
+                f"<div style='font-size:1.18em;font-weight:700;color:#21c55d'>✅ 已達標</div>"
+                f"<div style='font-size:0.92em;font-weight:700;color:#21c55d;margin-top:3px'>"
+                f"超過目標 {extra:.1f}%</div>"
+                f"</div>"
+            )
+        else:
+            right_card = (
+                f"<div style='background:rgba(245,159,0,0.08);"
+                f"border:1px solid rgba(245,159,0,0.28);border-radius:8px;padding:12px 16px'>"
+                f"<div style='font-size:0.76em;opacity:0.55;margin-bottom:4px'>距目標差距</div>"
+                f"<div style='font-size:1.18em;font-weight:700'>NT${gap_cost:,.0f}</div>"
+                f"<div style='font-size:0.92em;font-weight:700;color:#f59f00;margin-top:3px'>"
+                f"還需投入 {remaining:.1f}%</div>"
+                f"</div>"
+            )
+
         st.markdown(
-            f"<div style='margin:14px 0 4px'>"
+            f"<div style='margin:16px 0 6px'>"
+            # Header: label left, big % right
             f"<div style='display:flex;justify-content:space-between;"
-            f"font-size:0.82em;opacity:0.6;margin-bottom:4px'>"
-            f"<span>目標投入進度</span>"
-            f"<span>{cost_vs_tgt:.1f}% / 100%　{gap_s}</span></div>"
-            f"<div style='height:8px;border-radius:4px;"
-            f"background:rgba(128,128,128,0.18);overflow:hidden'>"
+            f"align-items:baseline;margin-bottom:10px'>"
+            f"<span style='font-size:0.88em;font-weight:600;opacity:0.70'>目標投入進度</span>"
+            f"<span style='font-size:1.6em;font-weight:800;color:{pct_clr}'>"
+            f"{cost_vs_tgt:.1f}%</span></div>"
+            # Progress bar
+            f"<div style='height:14px;border-radius:7px;"
+            f"background:rgba(128,128,128,0.15);overflow:hidden'>"
             f"<div style='height:100%;width:{fill:.1f}%;"
-            f"background:{clr};border-radius:4px'></div></div>"
-            f"<div style='font-size:0.74em;opacity:0.40;margin-top:4px'>{hint}</div>"
-            f"</div>",
+            f"background:{bar_grad};border-radius:7px'></div></div>"
+            # Formula hint
+            f"<div style='font-size:0.73em;opacity:0.38;margin:4px 0 12px'>"
+            f"= 已投入成本 NT${total_cost_twd:,.0f} ÷ 目標金額 NT${target_amt:,.0f}"
+            f"　｜僅買賣時改變，不受股價影響</div>"
+            # Two cards
+            f"<div style='display:grid;grid-template-columns:1fr 1fr;gap:10px'>"
+            + left_card + right_card
+            + f"</div></div>",
             unsafe_allow_html=True,
         )
 
