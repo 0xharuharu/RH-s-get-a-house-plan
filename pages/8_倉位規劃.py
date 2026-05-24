@@ -237,7 +237,7 @@ def render_allocation_tab(profile_id: str):
         )
 
         # ── Dual progress bars ────────────────────────────────────────────────
-        def _bar(label: str, pct: float, gap: float) -> str:
+        def _bar(label: str, hint: str, pct: float, gap: float) -> str:
             fill   = min(pct / target_pct * 100, 100) if target_pct > 0 else 0
             clr    = "#21c55d" if pct >= target_pct else "#4dabf5"
             gap_s  = (
@@ -246,7 +246,7 @@ def render_allocation_tab(profile_id: str):
                 else f"<span style='color:#f59f00'>還差 NT${gap:,.0f}</span>"
             )
             return (
-                f"<div style='margin-bottom:10px'>"
+                f"<div style='margin-bottom:14px'>"
                 f"<div style='display:flex;justify-content:space-between;"
                 f"font-size:0.82em;opacity:0.6;margin-bottom:4px'>"
                 f"<span>{label}</span>"
@@ -255,16 +255,49 @@ def render_allocation_tab(profile_id: str):
                 f"background:rgba(128,128,128,0.18);overflow:hidden'>"
                 f"<div style='height:100%;width:{fill:.1f}%;"
                 f"background:{clr};border-radius:4px'></div></div>"
+                f"<div style='font-size:0.74em;opacity:0.40;margin-top:4px'>{hint}</div>"
                 f"</div>"
             )
 
+        hint_mkt  = (
+            f"= 目前市值 NT${total_mkt_twd:,.0f} ÷ 可投資資金 NT${capital:,.0f}"
+            f"　｜隨股價漲跌浮動，反映當下帳面部位大小"
+        )
+        hint_cost = (
+            f"= 已投入成本 NT${total_cost_twd:,.0f} ÷ 可投資資金 NT${capital:,.0f}"
+            f"　｜僅買賣時改變，不受股價影響，反映實際資金使用率"
+        )
+
         st.markdown(
             f"<div style='margin:14px 0 4px'>"
-            + _bar("市值倉位",   mkt_pct,     gap_mkt)
-            + _bar("成本倉位",   cost_pct_of, gap_cost)
+            + _bar("市值倉位",   hint_mkt,  mkt_pct,     gap_mkt)
+            + _bar("成本倉位",   hint_cost, cost_pct_of, gap_cost)
             + "</div>",
             unsafe_allow_html=True,
         )
+
+        # ── Market value vs cost comparison ───────────────────────────────────
+        mv_diff   = total_mkt_twd - total_cost_twd
+        mv_pct_d  = (mv_diff / total_cost_twd * 100) if total_cost_twd else 0
+        mv_sign   = "▲" if mv_diff >= 0 else "▼"
+        mv_clr    = "#ff4b4b" if mv_diff >= 0 else "#21c55d"
+        mv_bg     = "rgba(255,75,75,0.06)"  if mv_diff >= 0 else "rgba(33,197,93,0.06)"
+        mv_border = "rgba(255,75,75,0.18)"  if mv_diff >= 0 else "rgba(33,197,93,0.18)"
+        st.markdown(
+            f"<div style='background:{mv_bg};border:1px solid {mv_border};"
+            f"border-radius:8px;padding:10px 14px;margin:2px 0 12px'>"
+            f"<div style='font-size:0.76em;opacity:0.50;margin-bottom:5px'>"
+            f"📊 市值 vs 成本（目前持股的浮動盈虧）</div>"
+            f"<div style='display:flex;align-items:center;flex-wrap:wrap;gap:6px 12px'>"
+            f"<span style='font-size:0.88em'>市值 <b>NT${total_mkt_twd:,.0f}</b></span>"
+            f"<span style='opacity:0.30'>vs</span>"
+            f"<span style='font-size:0.88em'>成本 <b>NT${total_cost_twd:,.0f}</b></span>"
+            f"<span style='font-size:1.05em;font-weight:700;color:{mv_clr}'>"
+            f"{mv_sign} NT${abs(mv_diff):,.0f}　{mv_pct_d:+.2f}%"
+            f"</span></div></div>",
+            unsafe_allow_html=True,
+        )
+
         if us_h and fx_date:
             st.caption(f"匯率 1 USD = NT${usd_twd:.4f}（{fx_date}）")
 
@@ -309,19 +342,14 @@ def render_allocation_tab(profile_id: str):
     # ── P&L summary ───────────────────────────────────────────────────────────
     st.subheader("💹 損益摘要")
 
-    total_return_pct = (total_pnl_twd / total_cost_twd * 100) if total_cost_twd else 0
-    p1, p2, p3 = st.columns(3)
-    p1.metric(
-        "未實現損益（TWD）",
-        f"NT${unrealized_twd:+,.0f}",
-        f"{(unrealized_twd / total_cost_twd * 100) if total_cost_twd else 0:+.2f}%",
-    )
-    p2.metric("已實現損益（TWD）", f"NT${realized_twd:+,.0f}")
-    p3.metric(
-        "總損益（TWD）",
-        f"NT${total_pnl_twd:+,.0f}",
-        f"{total_return_pct:+.2f}%",
-    )
+    unrealized_pct   = (unrealized_twd / total_cost_twd * 100) if total_cost_twd else 0
+    total_return_pct = (total_pnl_twd   / total_cost_twd * 100) if total_cost_twd else 0
+
+    p1, p2, p3, p4 = st.columns(4)
+    p1.metric("未實現損益", f"NT${unrealized_twd:+,.0f}")
+    p2.metric("未實現報酬率", f"{unrealized_pct:+.2f}%")
+    p3.metric("已實現損益", f"NT${realized_twd:+,.0f}")
+    p4.metric("總損益", f"NT${total_pnl_twd:+,.0f}", f"{total_return_pct:+.2f}%")
 
     if transactions:
         try:
