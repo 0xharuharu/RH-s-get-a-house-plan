@@ -391,6 +391,22 @@ def remove_profile_holding(portfolio: dict, profile_id: str, ticker: str):
                 grp.remove(t)
 
 
+def move_group(portfolio: dict, group_name: str, direction: int, market: str) -> bool:
+    """Move a group up (direction=-1) or down (+1) within its market's group list.
+    Returns True if the order changed."""
+    key = f"{market}_groups"
+    items = list(portfolio.get(key, {}).items())
+    idx = next((i for i, (k, _) in enumerate(items) if k == group_name), None)
+    if idx is None:
+        return False
+    new_idx = idx + direction
+    if 0 <= new_idx < len(items):
+        items[idx], items[new_idx] = items[new_idx], items[idx]
+        portfolio[key] = dict(items)
+        return True
+    return False
+
+
 def get_capital(portfolio: dict, profile_id: str) -> float:
     return float(portfolio.get(profile_id, {}).get("capital", 0.0))
 

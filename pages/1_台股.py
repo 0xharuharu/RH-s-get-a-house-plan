@@ -4,7 +4,7 @@ import streamlit as st
 from utils.portfolio import (
     load_portfolio, save_portfolio,
     add_to_group, remove_from_group, add_to_home_watch,
-    sync_holdings_to_groups,
+    sync_holdings_to_groups, move_group,
 )
 from utils.stock_data import get_stock_info, format_price, format_price_md, format_volume
 
@@ -40,6 +40,26 @@ with st.sidebar:
             if ticker and not ticker.endswith(".TW"):
                 ticker += ".TW"
             if ticker and add_to_group(portfolio, ticker, tgt, "tw"):
+                save_portfolio(portfolio)
+                st.rerun()
+
+    with st.expander("↕️ 群組排序"):
+        groups_now = list(portfolio.get("tw_groups", {}).keys())
+        for i, grp in enumerate(groups_now):
+            c_name, c_up, c_dn = st.columns([6, 1, 1])
+            c_name.markdown(
+                f"<div style='padding:4px 0;font-size:0.9em'>{grp}</div>",
+                unsafe_allow_html=True,
+            )
+            if c_up.button("↑", key=f"tw_up_{grp}", disabled=(i == 0),
+                           use_container_width=True):
+                move_group(portfolio, grp, -1, "tw")
+                save_portfolio(portfolio)
+                st.rerun()
+            if c_dn.button("↓", key=f"tw_dn_{grp}",
+                           disabled=(i == len(groups_now) - 1),
+                           use_container_width=True):
+                move_group(portfolio, grp, 1, "tw")
                 save_portfolio(portfolio)
                 st.rerun()
 
