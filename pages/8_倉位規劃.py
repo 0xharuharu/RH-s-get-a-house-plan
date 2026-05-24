@@ -214,65 +214,47 @@ def render_allocation_tab(profile_id: str):
 
     if capital > 0:
         target_amt   = capital * target_pct / 100
-        mkt_pct      = total_mkt_twd  / capital * 100  # market-value based
-        cost_pct_of  = total_cost_twd / capital * 100  # cost-invested based
-        gap_mkt      = target_amt - total_mkt_twd
+        cost_vs_tgt  = (total_cost_twd / target_amt * 100) if target_amt > 0 else 0
         gap_cost     = target_amt - total_cost_twd
+        reached      = cost_vs_tgt >= 100
 
         # ── Top metrics ───────────────────────────────────────────────────────
         m1, m2, m3, m4 = st.columns(4)
         m1.metric("可投資資金", f"NT${capital:,.0f}")
-        m2.metric(f"目標金額（{target_pct:.0f}%）", f"NT${target_amt:,.0f}")
-        m3.metric(
-            "目前市值",
-            f"NT${total_mkt_twd:,.0f}",
-            f"佔資金 {mkt_pct:.1f}%",
-            delta_color="off",
-        )
-        m4.metric(
-            "總投入成本",
-            f"NT${total_cost_twd:,.0f}",
-            f"佔資金 {cost_pct_of:.1f}%",
-            delta_color="off",
-        )
+        m2.metric(f"目標投入金額（{target_pct:.0f}%）", f"NT${target_amt:,.0f}")
+        m3.metric("已投入成本", f"NT${total_cost_twd:,.0f}",
+                  f"達成目標 {cost_vs_tgt:.1f}%", delta_color="off")
+        if reached:
+            m4.metric("距目標差距", "✅ 已達標")
+        else:
+            m4.metric("距目標差距", f"NT${gap_cost:,.0f}",
+                      f"還需投入 {gap_cost / target_amt * 100:.1f}%",
+                      delta_color="off")
 
-        # ── Dual progress bars ────────────────────────────────────────────────
-        def _bar(label: str, hint: str, pct: float, gap: float) -> str:
-            fill   = min(pct / target_pct * 100, 100) if target_pct > 0 else 0
-            clr    = "#21c55d" if pct >= target_pct else "#4dabf5"
-            gap_s  = (
-                f"<span style='color:#21c55d'>✅ 已達標</span>"
-                if pct >= target_pct
-                else f"<span style='color:#f59f00'>還差 NT${gap:,.0f}</span>"
-            )
-            return (
-                f"<div style='margin-bottom:14px'>"
-                f"<div style='display:flex;justify-content:space-between;"
-                f"font-size:0.82em;opacity:0.6;margin-bottom:4px'>"
-                f"<span>{label}</span>"
-                f"<span>{pct:.1f}% / 目標 {target_pct:.0f}%　{gap_s}</span></div>"
-                f"<div style='height:8px;border-radius:4px;"
-                f"background:rgba(128,128,128,0.18);overflow:hidden'>"
-                f"<div style='height:100%;width:{fill:.1f}%;"
-                f"background:{clr};border-radius:4px'></div></div>"
-                f"<div style='font-size:0.74em;opacity:0.40;margin-top:4px'>{hint}</div>"
-                f"</div>"
-            )
-
-        hint_mkt  = (
-            f"= 目前市值 NT${total_mkt_twd:,.0f} ÷ 可投資資金 NT${capital:,.0f}"
-            f"　｜隨股價漲跌浮動，反映當下帳面部位大小"
+        # ── Progress bar: invested cost vs target ─────────────────────────────
+        fill  = min(cost_vs_tgt, 100)
+        clr   = "#21c55d" if reached else "#4dabf5"
+        gap_s = (
+            "<span style='color:#21c55d'>✅ 已達標</span>"
+            if reached
+            else f"<span style='color:#f59f00'>還差 NT${gap_cost:,.0f}</span>"
         )
-        hint_cost = (
-            f"= 已投入成本 NT${total_cost_twd:,.0f} ÷ 可投資資金 NT${capital:,.0f}"
-            f"　｜僅買賣時改變，不受股價影響，反映實際資金使用率"
+        hint = (
+            f"= 已投入成本 NT${total_cost_twd:,.0f} ÷ 目標金額 NT${target_amt:,.0f}"
+            f"　｜僅買賣時改變，不受股價影響"
         )
-
         st.markdown(
             f"<div style='margin:14px 0 4px'>"
-            + _bar("市值倉位",   hint_mkt,  mkt_pct,     gap_mkt)
-            + _bar("成本倉位",   hint_cost, cost_pct_of, gap_cost)
-            + "</div>",
+            f"<div style='display:flex;justify-content:space-between;"
+            f"font-size:0.82em;opacity:0.6;margin-bottom:4px'>"
+            f"<span>目標投入進度</span>"
+            f"<span>{cost_vs_tgt:.1f}% / 100%　{gap_s}</span></div>"
+            f"<div style='height:8px;border-radius:4px;"
+            f"background:rgba(128,128,128,0.18);overflow:hidden'>"
+            f"<div style='height:100%;width:{fill:.1f}%;"
+            f"background:{clr};border-radius:4px'></div></div>"
+            f"<div style='font-size:0.74em;opacity:0.40;margin-top:4px'>{hint}</div>"
+            f"</div>",
             unsafe_allow_html=True,
         )
 
