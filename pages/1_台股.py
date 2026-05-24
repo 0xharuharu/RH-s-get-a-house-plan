@@ -6,7 +6,7 @@ from utils.portfolio import (
     add_to_group, remove_from_group, add_to_home_watch,
     sync_holdings_to_groups, move_group,
 )
-from utils.stock_data import get_stock_info, format_price, format_price_md, format_volume
+from utils.stock_data import get_stock_info, format_price, format_price_md, format_volume, search_tickers
 
 st.set_page_config(page_title="台股", page_icon="🇹🇼", layout="wide")
 
@@ -33,14 +33,69 @@ with st.sidebar:
                 st.rerun()
 
     with st.expander("➕ 新增股票"):
-        raw = st.text_input("代號（不需加 .TW）", placeholder="例: 2330", key="tw_raw")
+        raw = st.text_input("代號或名稱", placeholder="例: 2330 或 台積電", key="tw_raw")
         tgt = st.selectbox("加入群組", groups, key="tw_tgt")
-        if st.button("新增", key="tw_btn_add", use_container_width=True):
-            ticker = raw.strip().upper()
-            if ticker and not ticker.endswith(".TW"):
-                ticker += ".TW"
-            if ticker and add_to_group(portfolio, ticker, tgt, "tw"):
-                save_portfolio(portfolio)
+        if st.button("搜尋 / 新增", key="tw_btn_add",
+                     use_container_width=True, type="primary"):
+            query = raw.strip()
+            if query and tgt:
+                up = query.upper()
+                # Build candidates: try .TW then .TWO (skip if suffix already given)
+                if up.endswith(".TW") or up.endswith(".TWO"):
+                    candidates = [up]
+                else:
+                    candidates = [up + ".TW", up + ".TWO"]
+                found = next((c for c in candidates if get_stock_info(c)), None)
+                if found:
+                    if add_to_group(portfolio, found, tgt, "tw"):
+                        save_portfolio(portfolio)
+                        st.session_state.pop("tw_suggestions", None)
+                        st.session_state.pop("tw_add_msg", None)
+                        st.rerun()
+                    else:
+                        st.session_state["tw_add_msg"] = (
+                            f"⚠ **{found}** 已在群組「{tgt}」內"
+                        )
+                else:
+                    with st.spinner("搜尋中…"):
+                        suggs = search_tickers(query, max_results=6)
+                    if suggs:
+                        st.session_state["tw_suggestions"]    = suggs
+                        st.session_state["tw_suggest_query"]  = query
+                        st.session_state["tw_suggest_tgt"]    = tgt
+                        st.session_state.pop("tw_add_msg", None)
+                    else:
+                        st.session_state["tw_add_msg"] = (
+                            "找不到任何結果，請嘗試英文代號或完整公司名稱。"
+                        )
+
+        if st.session_state.get("tw_add_msg"):
+            st.warning(st.session_state["tw_add_msg"])
+
+        if st.session_state.get("tw_suggestions"):
+            suggs     = st.session_state["tw_suggestions"]
+            q_text    = st.session_state.get("tw_suggest_query", "")
+            saved_tgt = st.session_state.get("tw_suggest_tgt", "")
+            st.caption(f"「{q_text}」是否是指：")
+            grp_tickers = portfolio.get("tw_groups", {}).get(saved_tgt, [])
+            for j, s in enumerate(suggs):
+                already = s["symbol"] in grp_tickers
+                lbl = f"{s['symbol']}  {s['name']}" + ("  ✓" if already else "")
+                if st.button(lbl, key=f"tw_sugg_{j}", use_container_width=True):
+                    if already:
+                        st.session_state["tw_add_msg"] = (
+                            f"⚠ **{s['symbol']}** 已在群組內"
+                        )
+                    else:
+                        add_to_group(portfolio, s["symbol"], saved_tgt, "tw")
+                        save_portfolio(portfolio)
+                        st.session_state.pop("tw_suggestions", None)
+                        st.session_state.pop("tw_add_msg", None)
+                        st.rerun()
+            if st.button("取消", key="tw_sugg_cancel",
+                         use_container_width=True, type="secondary"):
+                st.session_state.pop("tw_suggestions", None)
+                st.session_state.pop("tw_add_msg", None)
                 st.rerun()
 
     with st.expander("↕️ 群組排序"):
