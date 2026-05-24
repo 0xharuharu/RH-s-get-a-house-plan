@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import streamlit as st
+from streamlit_sortables import sort_items
 from utils.portfolio import (
     load_portfolio, save_portfolio,
     add_to_group, remove_from_group, add_to_home_watch,
-    sync_holdings_to_groups, move_group,
+    sync_holdings_to_groups,
 )
 from utils.stock_data import get_stock_info, format_price, format_price_md, format_volume, search_tickers
 
@@ -99,24 +100,13 @@ with st.sidebar:
                 st.rerun()
 
     with st.expander("↕️ 群組排序"):
+        st.caption("拖曳群組名稱以調整順序")
         groups_now = list(portfolio.get("tw_groups", {}).keys())
-        for i, grp in enumerate(groups_now):
-            c_name, c_up, c_dn = st.columns([6, 1, 1])
-            c_name.markdown(
-                f"<div style='padding:4px 0;font-size:0.9em'>{grp}</div>",
-                unsafe_allow_html=True,
-            )
-            if c_up.button("↑", key=f"tw_up_{grp}", disabled=(i == 0),
-                           use_container_width=True):
-                move_group(portfolio, grp, -1, "tw")
-                save_portfolio(portfolio)
-                st.rerun()
-            if c_dn.button("↓", key=f"tw_dn_{grp}",
-                           disabled=(i == len(groups_now) - 1),
-                           use_container_width=True):
-                move_group(portfolio, grp, 1, "tw")
-                save_portfolio(portfolio)
-                st.rerun()
+        sorted_groups = sort_items(groups_now, direction="vertical", key="tw_sort")
+        if sorted_groups != groups_now:
+            portfolio["tw_groups"] = {k: portfolio["tw_groups"][k] for k in sorted_groups}
+            save_portfolio(portfolio)
+            st.rerun()
 
     if st.button("🔄 重新整理報價", use_container_width=True):
         st.cache_data.clear()
