@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import streamlit as st
 from streamlit_sortables import sort_items
+from utils.ai_analysis import fetch_ai_analysis
 from utils.portfolio import (
     load_portfolio, save_portfolio,
     add_to_group, remove_from_group, add_to_home_watch,
@@ -227,6 +228,26 @@ def render_tw_card(ticker: str, grp: str):
                 remove_from_group(portfolio, ticker, grp, "tw")
                 save_portfolio(portfolio)
                 st.rerun()
+
+        # ── AI 買入分析 ───────────────────────────────────────────────────────
+        ai_key = f"ai_tw_{ticker}_{grp}"
+        active  = st.session_state.get(ai_key, False)
+        btn_lbl = "🤖 收起分析" if active else "🤖 買入分析"
+        if st.button(btn_lbl, key=f"ai_btn_tw_{ticker}_{grp}",
+                     use_container_width=True):
+            st.session_state[ai_key] = not active
+            st.rerun()
+        if st.session_state.get(ai_key):
+            with st.spinner("AI 分析中…"):
+                result = fetch_ai_analysis(actual_ticker, info)
+            st.markdown(
+                "<div style='background:rgba(77,171,245,0.06);"
+                "border:1px solid rgba(77,171,245,0.18);border-radius:8px;"
+                "padding:12px 14px;margin-top:4px;font-size:0.86em;line-height:1.7'>"
+                + result.replace("\n", "<br>")
+                + "</div>",
+                unsafe_allow_html=True,
+            )
 
 
 for tab, grp in zip(tabs, group_names):
