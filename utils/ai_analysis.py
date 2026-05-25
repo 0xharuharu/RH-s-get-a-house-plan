@@ -49,7 +49,11 @@ def _call_gemini(
     )
 
     try:
-        client = genai.Client(api_key=api_key)
+        from google.genai import types as _types
+        client = genai.Client(
+            api_key=api_key,
+            http_options=_types.HttpOptions(api_version="v1"),
+        )
         response = client.models.generate_content(
             model="gemini-1.5-flash",
             contents=prompt,
