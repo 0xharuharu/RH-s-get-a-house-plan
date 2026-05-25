@@ -17,9 +17,9 @@ def _call_gemini(
 ) -> str:
     """Cached Gemini call — all args are primitives so caching works correctly."""
     try:
-        import google.generativeai as genai
+        from google import genai
     except ImportError:
-        return "⚠️ 缺少 google-generativeai 套件，請確認 requirements.txt。"
+        return "⚠️ 缺少 google-genai 套件，請確認 requirements.txt。"
 
     # 52-week position context
     if w52_low and w52_high and w52_high > w52_low:
@@ -49,9 +49,11 @@ def _call_gemini(
     )
 
     try:
-        genai.configure(api_key=api_key)
-        model = genai.GenerativeModel("gemini-1.5-flash")
-        response = model.generate_content(prompt)
+        client = genai.Client(api_key=api_key)
+        response = client.models.generate_content(
+            model="gemini-2.0-flash-lite",
+            contents=prompt,
+        )
         return response.text
     except Exception as e:
         return f"⚠️ 分析失敗：{e}"
