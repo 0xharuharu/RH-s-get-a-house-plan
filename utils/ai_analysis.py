@@ -4,7 +4,7 @@ import streamlit as st
 
 
 @st.cache_data(ttl=1800, show_spinner=False)
-def _call_claude(
+def _call_gemini(
     api_key: str,
     ticker: str,
     name: str,
@@ -15,11 +15,11 @@ def _call_claude(
     volume: int,
     pe_ratio: float | None,
 ) -> str:
-    """Cached Claude call — all args are primitives so caching works correctly."""
+    """Cached Gemini call — all args are primitives so caching works correctly."""
     try:
-        import anthropic
+        import google.generativeai as genai
     except ImportError:
-        return "⚠️ 缺少 anthropic 套件，請確認 requirements.txt 已包含 anthropic。"
+        return "⚠️ 缺少 google-generativeai 套件，請確認 requirements.txt。"
 
     # 52-week position context
     if w52_low and w52_high and w52_high > w52_low:
@@ -49,13 +49,10 @@ def _call_claude(
     )
 
     try:
-        client = anthropic.Anthropic(api_key=api_key)
-        msg = client.messages.create(
-            model="claude-haiku-4-5",
-            max_tokens=600,
-            messages=[{"role": "user", "content": prompt}],
-        )
-        return msg.content[0].text
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel("gemini-1.5-flash")
+        response = model.generate_content(prompt)
+        return response.text
     except Exception as e:
         return f"⚠️ 分析失敗：{e}"
 
@@ -63,18 +60,18 @@ def _call_claude(
 def fetch_ai_analysis(ticker: str, info: dict) -> str:
     """Public entry-point: resolves API key then delegates to cached function."""
     try:
-        api_key = str(st.secrets.get("anthropic_api_key", ""))
+        api_key = str(st.secrets.get("gemini_api_key", ""))
     except Exception:
         api_key = ""
 
     if not api_key:
         return (
-            "⚠️ 尚未設定 Anthropic API 金鑰。\n"
+            "⚠️ 尚未設定 Gemini API 金鑰。\n"
             "請在 Streamlit Secrets 新增：\n"
-            "`anthropic_api_key = \"sk-ant-...\"`"
+            "`gemini_api_key = \"AIza...\"`"
         )
 
-    return _call_claude(
+    return _call_gemini(
         api_key=api_key,
         ticker=ticker,
         name=info.get("display_name") or info.get("name", ticker),
