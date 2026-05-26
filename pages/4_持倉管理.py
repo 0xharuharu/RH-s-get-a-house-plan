@@ -223,10 +223,28 @@ def render_holdings_section(section: dict, title: str, profile_id: str, prices: 
     total_pnl = total_mkt - total_cost
     pnl_pct = (total_pnl / total_cost * 100) if total_cost else 0
 
-    k1, k2, k3 = st.columns(3)
+    # ── 預估賣出淨損益（台股：扣手續費+證交稅）────────────────────────
+    fee_rate = get_broker_fee_rate(portfolio)
+    total_sell_costs = sum(
+        calc_sell_costs(prices.get(t, h["cost_per_share"]), h["quantity"], fee_rate)
+        for t, h in section.items()
+        if is_tw_ticker(t)
+    )
+    has_sell_costs = total_sell_costs > 0
+    total_net_pnl = total_pnl - total_sell_costs
+    net_pnl_pct = (total_net_pnl / total_cost * 100) if total_cost else 0
+
+    if has_sell_costs:
+        k1, k2, k3, k4 = st.columns(4)
+    else:
+        k1, k2, k3 = st.columns(3)
+
     k1.metric("總投入", f"{total_cost:,.0f}")
     k2.metric("目前市值", f"{total_mkt:,.0f}", f"{total_pnl:+,.0f}")
-    k3.metric("損益", f"{total_pnl:+,.0f}", f"{pnl_pct:+.2f}%")
+    k3.metric("損益（未扣費）", f"{total_pnl:+,.0f}", f"{pnl_pct:+.2f}%")
+    if has_sell_costs:
+        k4.metric("預估淨損益", f"{total_net_pnl:+,.0f}", f"{net_pnl_pct:+.2f}%",
+                  help="已扣除賣出手續費 + 0.3% 證交稅的預估損益")
 
     st.markdown("")
 
