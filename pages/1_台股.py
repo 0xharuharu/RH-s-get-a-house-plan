@@ -240,11 +240,14 @@ def render_tw_card(ticker: str, grp: str):
         if st.session_state.get(ai_key):
             with st.spinner("AI 分析中…"):
                 result = fetch_ai_analysis(actual_ticker, info)
+            import re as _re
+            html_result = _re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', result)
+            html_result = html_result.replace("\n", "<br>")
             st.markdown(
                 "<div style='background:rgba(77,171,245,0.06);"
                 "border:1px solid rgba(77,171,245,0.18);border-radius:8px;"
                 "padding:12px 14px;margin-top:4px;font-size:0.86em;line-height:1.7'>"
-                + result.replace("\n", "<br>")
+                + html_result
                 + "</div>",
                 unsafe_allow_html=True,
             )
