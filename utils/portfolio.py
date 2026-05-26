@@ -456,6 +456,35 @@ def get_transactions(portfolio: dict, profile_id: str) -> list[dict]:
     return portfolio.get(profile_id, {}).get("transactions", [])
 
 
+# ── Broker fee settings ───────────────────────────────────────────────────────
+
+def get_broker_fee_rate(portfolio: dict) -> float:
+    """Effective commission rate after broker discount.
+    Default = 0.1425% × 0.6 (standard rate at 6折).
+    """
+    return float(portfolio.get("broker_fee_rate", 0.001425 * 0.6))
+
+
+def set_broker_fee_rate(portfolio: dict, rate: float) -> None:
+    portfolio["broker_fee_rate"] = rate
+
+
+def calc_commission(amount: float, fee_rate: float) -> float:
+    """Buy or sell commission. Minimum NT$20."""
+    return max(amount * fee_rate, 20.0)
+
+
+def calc_sell_tax(amount: float, is_etf: bool = False) -> float:
+    """Taiwan Securities Transaction Tax: 0.3% stocks, 0.1% ETFs."""
+    return amount * (0.001 if is_etf else 0.003)
+
+
+def calc_sell_costs(price: float, qty: float, fee_rate: float, is_etf: bool = False) -> float:
+    """Total estimated costs when selling (commission + tax). TW stocks only."""
+    amount = price * qty
+    return calc_commission(amount, fee_rate) + calc_sell_tax(amount, is_etf)
+
+
 def calc_summary(
     portfolio: dict,
     prices: dict[str, float],

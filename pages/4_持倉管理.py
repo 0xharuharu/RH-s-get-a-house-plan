@@ -11,6 +11,8 @@ from utils.portfolio import (
     get_profile_holdings, upsert_profile_holding, remove_profile_holding,
     set_profile_pin, clear_profile_pin,
     log_transaction,
+    get_broker_fee_rate, set_broker_fee_rate,
+    calc_commission, calc_sell_costs,
 )
 from utils.stock_data import (
     get_stock_info, TW_NAMES, TW_NAMES_REVERSE,
@@ -22,6 +24,33 @@ st.set_page_config(page_title="持倉管理", page_icon="💼", layout="wide")
 if "portfolio" not in st.session_state:
     st.session_state.portfolio = load_portfolio()
 portfolio = st.session_state.portfolio
+
+# ── Sidebar：手續費設定 ────────────────────────────────────────────────────────
+with st.sidebar:
+    st.header("⚙️ 手續費設定")
+    current_rate_pct = get_broker_fee_rate(portfolio) * 100
+    new_rate_pct = st.number_input(
+        "手續費率（%）",
+        min_value=0.0,
+        max_value=0.1425,
+        value=round(current_rate_pct, 5),
+        step=0.001,
+        format="%.4f",
+        help=(
+            "台股標準費率 0.1425%。\n"
+            "依你的券商折扣填入實際費率：\n"
+            "• 6折 → 0.0855%\n"
+            "• 28折 → 0.0399%"
+        ),
+    )
+    discount_pct = (new_rate_pct / 0.1425 * 100) if new_rate_pct else 0
+    st.caption(f"相當於標準費率的 **{discount_pct:.0f}%**（{discount_pct/10:.1f}折）")
+    if st.button("💾 儲存費率", use_container_width=True):
+        set_broker_fee_rate(portfolio, new_rate_pct / 100)
+        save_portfolio(portfolio)
+        st.success("已儲存")
+        st.rerun()
+    st.caption("※ 賣出手續費 + 0.3% 證交稅將用於計算預估淨損益")
 
 PROFILE_IDS = ["profile_a", "profile_b"]
 
@@ -225,6 +254,14 @@ def render_holdings_section(section: dict, title: str, profile_id: str, prices: 
             f"<span style='color:{price_clr};font-size:0.88em'>{price_sign}{abs(chg_p):.2f}%</span>"
         ) if price else "<b>—</b>"
 
+        # ── 預估淨損益（扣賣出手續費 + 證交稅）──────────────────────
+        fee_rate = get_broker_fee_rate(portfolio)
+        net_pnl = net_pnl_p = None
+        if pnl is not None and price is not None and is_tw_ticker(ticker):
+            sell_costs = calc_sell_costs(price, qty, fee_rate)
+            net_pnl = pnl - sell_costs
+            net_pnl_p = (net_pnl / total * 100) if total else 0
+
         pnl_part = ""
         if pnl is not None and pnl_p is not None:
             pnl_clr = "#ff4b4b" if pnl >= 0 else "#21c55d"
@@ -232,6 +269,14 @@ def render_holdings_section(section: dict, title: str, profile_id: str, prices: 
                 f"<span style='color:{pnl_clr};font-size:1.28em;font-weight:700'>{pnl:+,.0f}</span>"
                 f"&ensp;<span style='color:{pnl_clr};font-size:1.0em;font-weight:600'>{pnl_p:+.2f}%</span>"
             )
+            if net_pnl is not None:
+                net_clr = "#ff4b4b" if net_pnl >= 0 else "#21c55d"
+                pnl_part += (
+                    f"<br><span style='font-size:0.78em;opacity:0.65'>預估賣出淨損益&nbsp;</span>"
+                    f"<span style='color:{net_clr};font-size:0.88em;font-weight:600'>"
+                    f"{net_pnl:+,.0f}（{net_pnl_p:+.2f}%）</span>"
+                    f"<span style='font-size:0.72em;opacity:0.45'>&nbsp;含手續費+證交稅</span>"
+                )
         else:
             pnl_part = "<span style='opacity:0.45'>—</span>"
 
@@ -294,20 +339,28 @@ def render_holdings_section(section: dict, title: str, profile_id: str, prices: 
 
                 # ── 買入表單 ──────────────────────────────────────────────────
                 if st.session_state.get(mode_key) == "buy":
+                    fee_rate = get_broker_fee_rate(portfolio)
                     with st.form(key=f"buy_form_{profile_id}_{ticker}"):
                         fc1, fc2 = st.columns(2)
                         with fc1:
                             buy_qty = st.number_input("買入股數", min_value=0.0, step=1.0, format="%.0f")
                         with fc2:
                             buy_price = st.number_input("買入價格", min_value=0.0, value=float(cost_ps), step=0.01)
+                        st.caption(
+                            f"手續費率 {fee_rate*100:.4f}%（最低 NT$20）— "
+                            "手續費自動計入成本，可至左側「手續費設定」調整"
+                        )
                         if st.form_submit_button("✅ 確認買入", use_container_width=True, type="primary"):
                             if buy_qty > 0:
+                                buy_fee = calc_commission(buy_price * buy_qty, fee_rate)
+                                total_buy = buy_price * buy_qty + buy_fee
                                 new_qty = qty + buy_qty
-                                new_cost = (cost_ps * qty + buy_price * buy_qty) / new_qty
+                                new_cost = (cost_ps * qty + total_buy) / new_qty
                                 upsert_profile_holding(portfolio, profile_id, ticker, new_cost, new_qty)
                                 log_transaction(portfolio, profile_id, ticker, "buy", buy_qty, buy_price)
                                 save_portfolio(portfolio)
                                 st.session_state[mode_key] = None
+                                st.toast(f"買入 {buy_qty:,.0f} 股，含手續費 NT${buy_fee:,.0f}，新均價 {new_cost:,.2f}")
                                 st.rerun()
 
                 # ── 賣出表單 ──────────────────────────────────────────────────
