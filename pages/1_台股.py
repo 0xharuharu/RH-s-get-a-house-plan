@@ -232,7 +232,7 @@ def render_tw_card(ticker: str, grp: str):
         # ── AI 買入分析 ───────────────────────────────────────────────────────
         ai_key = f"ai_tw_{ticker}_{grp}"
         active  = st.session_state.get(ai_key, False)
-        btn_lbl = "🤖 收起分析" if active else "🤖 買入分析"
+        btn_lbl = "💡 收起分析" if active else "💡 買入分析"
         if st.button(btn_lbl, key=f"ai_btn_tw_{ticker}_{grp}",
                      use_container_width=True):
             st.session_state[ai_key] = not active
